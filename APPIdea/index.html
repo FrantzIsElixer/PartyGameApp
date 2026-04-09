@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>After Hours Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <p class="eyebrow">Party App Prototype</p>
+        <h1>After Hours</h1>
+        <p class="brand-copy">Truths, dares, and chaotic party rounds with community-made packs.</p>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-button active" data-view="home">Home</button>
+        <button class="nav-button" data-view="play">Play</button>
+        <button class="nav-button" data-view="edit">Edit Dares</button>
+        <button class="nav-button" data-view="browse">Browse Packs</button>
+      </nav>
+
+      <section class="sidebar-card">
+        <p class="sidebar-label">Prototype Focus</p>
+        <ul class="feature-list">
+          <li>Step-by-step play flow with full-screen phases</li>
+          <li>Rotation mode and random select mode</li>
+          <li>Custom dare pack editor</li>
+          <li>Community browse and add flow</li>
+          <li>Local persistence with browser storage</li>
+        </ul>
+      </section>
+    </aside>
+
+    <main class="main-content">
+      <section class="view active" id="view-home">
+        <div class="hero">
+          <div>
+            <p class="eyebrow">Main Screen</p>
+            <h2>Choose your kind of chaos.</h2>
+            <p class="hero-copy">
+              This prototype follows your app structure: jump into gameplay, edit your own dare libraries,
+              or browse public packs to add to your collection.
+            </p>
+            <div class="hero-actions">
+              <button class="primary-action" data-jump="play">Play</button>
+              <button class="secondary-action" data-jump="edit">Edit Dares</button>
+              <button class="secondary-action" data-jump="browse">Browse Packs</button>
+            </div>
+          </div>
+
+          <div class="hero-panel">
+            <div class="metric-row">
+              <div class="metric-card">
+                <span class="metric-value" id="metric-library">0</span>
+                <span class="metric-label">My Packs</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-value" id="metric-public">0</span>
+                <span class="metric-label">Public Packs</span>
+              </div>
+            </div>
+            <div class="pill-row">
+              <span class="pill">Lite</span>
+              <span class="pill">Extreme</span>
+              <span class="pill">NSFW</span>
+              <span class="pill">Drinking</span>
+              <span class="pill">Truth</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-play">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Gameplay Engine</p>
+            <h2>Move through the round one phase at a time.</h2>
+          </div>
+          <button class="ghost-action" id="reset-game">Reset Round</button>
+        </div>
+
+        <div class="phase-progress">
+          <button class="phase-dot active" data-step="setup">1. Setup</button>
+          <button class="phase-dot" data-step="players">2. Players</button>
+          <button class="phase-dot" data-step="chooser">3. Choose Player</button>
+          <button class="phase-dot" data-step="outcome">4. Spin Outcome</button>
+        </div>
+
+        <div class="play-flow">
+          <section class="play-screen active" data-step-screen="setup">
+            <div class="play-screen-inner">
+              <div class="play-copy">
+                <p class="eyebrow">Phase 1</p>
+                <h3>Pick the categories for this round.</h3>
+                <p class="section-copy">
+                  Combine lite, extreme, NSFW, or drinking packs before the game starts.
+                </p>
+              </div>
+              <div class="play-screen-card">
+                <div id="play-category-list" class="category-list"></div>
+              </div>
+            </div>
+            <div class="play-nav">
+              <span class="play-hint">Select at least one category to continue.</span>
+              <button class="primary-action" id="go-to-players">Next: Players</button>
+            </div>
+          </section>
+
+          <section class="play-screen" data-step-screen="players">
+            <div class="play-screen-inner dual">
+              <div class="play-copy">
+                <p class="eyebrow">Phase 2</p>
+                <h3>Choose how the app selects the next player.</h3>
+                <p class="section-copy">
+                  Rotation keeps a clean order. Random mode picks anyone each spin.
+                </p>
+
+                <div class="mode-toggle">
+                  <button class="mode-button active" data-mode="rotation">Rotation</button>
+                  <button class="mode-button" data-mode="random">Random Select</button>
+                </div>
+
+                <div class="mode-info" id="mode-info">
+                  Rotation mode will move through your players in order.
+                </div>
+              </div>
+
+              <div class="play-screen-card">
+                <h3>Add Players</h3>
+                <div class="player-form">
+                  <input id="player-name" type="text" placeholder="Add player name" maxlength="20" />
+                  <button class="primary-action small" id="add-player">Add</button>
+                </div>
+                <div id="player-list" class="player-list"></div>
+              </div>
+            </div>
+            <div class="play-nav">
+              <button class="ghost-action" data-back-step="setup">Back</button>
+              <button class="primary-action" id="go-to-chooser">Next: Choose Player</button>
+            </div>
+          </section>
+
+          <section class="play-screen" data-step-screen="chooser">
+            <div class="play-screen-inner spotlight">
+              <div class="play-copy center">
+                <p class="eyebrow">Phase 3</p>
+                <h3>Spin the finger and lock in the next player.</h3>
+                <p class="section-copy">
+                  Your finger pointer image is now the center piece of the player picker.
+                </p>
+              </div>
+
+              <div class="chooser-stage">
+                <div class="pointer-disc">
+                  <div class="player-ring" id="player-ring"></div>
+                  <img
+                    src="assets/finger-pointer.svg"
+                    alt="Finger pointer"
+                    class="pointer-finger-image"
+                    id="pointer-finger"
+                  />
+                </div>
+                <div class="result-block emphasis chooser-result">
+                  <p class="result-label">Selected Player</p>
+                  <p class="result-text large" id="selected-player">Add players or use random mode.</p>
+                </div>
+              </div>
+            </div>
+            <div class="play-nav">
+              <button class="ghost-action" data-back-step="players">Back</button>
+              <div class="play-nav-actions">
+                <button class="primary-action" id="spin-player">Spin Finger</button>
+                <button class="secondary-action" id="go-to-outcome">Next: Spin Outcome</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="play-screen" data-step-screen="outcome">
+            <div class="play-screen-inner spotlight">
+              <div class="play-copy center">
+                <p class="eyebrow">Phase 4</p>
+                <h3>Spin the wheel to decide what happens next.</h3>
+                <p class="section-copy">
+                  The wheel picks truth, dare, shot, or wildcard, then pulls a matching prompt from your active packs.
+                </p>
+              </div>
+
+              <div class="outcome-stage">
+                <div class="wheel-shell">
+                  <div class="wheel-pointer"></div>
+                  <div class="wheel" id="dare-wheel">
+                    <div class="wheel-center">Spin</div>
+                  </div>
+                </div>
+                <div class="result-grid">
+                  <div class="result-block">
+                    <p class="result-label">Wheel Result</p>
+                    <p class="result-text" id="selected-outcome">Truth, Dare, or Shot will appear here.</p>
+                  </div>
+                  <div class="result-block emphasis">
+                    <p class="result-label">Dare / Prompt</p>
+                    <p class="result-text large" id="selected-dare">Pick categories, then spin the wheel.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="play-nav">
+              <button class="ghost-action" data-back-step="chooser">Back</button>
+              <div class="play-nav-actions">
+                <button class="primary-action" id="spin-dare">Spin Wheel</button>
+                <button class="secondary-action" id="play-again">Play Again</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="view-edit">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Category Creator</p>
+            <h2>Build your own packs and toggle individual dares on or off.</h2>
+          </div>
+        </div>
+
+        <div class="editor-grid">
+          <div class="card">
+            <h3>Create a Pack</h3>
+            <div class="stack">
+              <input id="new-pack-title" type="text" placeholder="Pack title" maxlength="40" />
+              <input id="new-pack-author" type="text" placeholder="Your name or alias" maxlength="24" />
+              <select id="new-pack-intensity">
+                <option value="Lite">Lite</option>
+                <option value="Extreme">Extreme</option>
+                <option value="NSFW">NSFW</option>
+                <option value="Drinking">Drinking</option>
+              </select>
+              <label class="toggle-row">
+                <input id="new-pack-public" type="checkbox" checked />
+                <span>Publish to browse screen</span>
+              </label>
+              <textarea id="new-pack-dares" rows="7" placeholder="Add one dare or truth per line"></textarea>
+              <button class="primary-action" id="create-pack">Create Pack</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>My Library</h3>
+            <p class="section-copy">Disable individual prompts without deleting the whole category.</p>
+            <div id="library-list" class="library-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-browse">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Community Hub</p>
+            <h2>Search packs and add them into your local library.</h2>
+          </div>
+        </div>
+
+        <div class="browse-toolbar card">
+          <input id="browse-search" type="search" placeholder="Search public packs" />
+          <select id="browse-filter">
+            <option value="all">All Intensities</option>
+            <option value="Lite">Lite</option>
+            <option value="Extreme">Extreme</option>
+            <option value="NSFW">NSFW</option>
+            <option value="Drinking">Drinking</option>
+          </select>
+        </div>
+
+        <div id="browse-list" class="browse-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <template id="category-chip-template">
+    <label class="category-chip">
+      <input type="checkbox" />
+      <span></span>
+    </label>
+  </template>
+
+  <script src="script.js"></script>
+</body>
+</html>

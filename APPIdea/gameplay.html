@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>After Hours Gameplay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="gameplay-page">
+  <main class="gameplay-shell">
+    <section class="gameplay-hero">
+      <div>
+        <p class="eyebrow">Game Room</p>
+        <h1>Move through the round one dramatic beat at a time.</h1>
+        <p class="hero-copy">Choose the next player first, then reveal their outcome on a dedicated dare screen. No more cramped everything-at-once layout.</p>
+      </div>
+      <div class="gameplay-actions">
+        <a class="secondary-action gameplay-link" href="index.html">Back to Setup</a>
+        <div class="gameplay-stage-tag" id="gameplay-stage-tag">Player Picker</div>
+      </div>
+    </section>
+
+    <section class="gameplay-stage gameplay-stage-active" id="player-stage">
+      <div class="gameplay-stage-shell">
+        <div class="gameplay-stage-copy gameplay-stage-copy-center">
+          <p class="eyebrow">Player Picker</p>
+          <h2>Spin the arrow and lock in the next player.</h2>
+          <p class="hero-copy">This screen is only for choosing who goes next. Once the arrow lands, we'll move straight to the dare wheel.</p>
+        </div>
+        <div class="gameplay-player-stage">
+          <div class="pointer-disc gameplay-disc gameplay-disc-large gameplay-disc-polished">
+            <div class="player-ring" id="player-ring"></div>
+            <div class="pointer-finger-image gameplay-arrow" id="pointer-finger" aria-hidden="true">
+              <div class="gameplay-arrow-shaft"></div>
+              <div class="gameplay-arrow-head"></div>
+            </div>
+          </div>
+          <div class="result-block emphasis chooser-result gameplay-result-card gameplay-result-card-wide">
+            <p class="result-label">Selected Player</p>
+            <p class="result-text large" id="selected-player">Spin the arrow to choose the next player.</p>
+          </div>
+        </div>
+        <div class="gameplay-panel-actions">
+          <button class="secondary-action" id="spin-player" type="button">Spin Arrow</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="gameplay-stage" id="dare-stage">
+      <div class="gameplay-stage-shell gameplay-stage-shell-wide">
+        <div class="gameplay-stage-copy">
+          <p class="eyebrow">Dare Reveal</p>
+          <h2>Spin the wheel to decide what happens next.</h2>
+          <p class="hero-copy">The next player is locked in. Spin the wheel, reveal the prompt, then send the game back to the player picker for the next turn.</p>
+        </div>
+
+        <div class="gameplay-focus-banner">
+          <span class="gameplay-focus-label">Current Player</span>
+          <span class="gameplay-focus-value" id="focus-player">Waiting for a spin</span>
+        </div>
+
+        <div class="gameplay-dare-layout">
+          <section class="gameplay-panel">
+            <div class="outcome-stage gameplay-wheel-stage">
+              <div class="wheel-shell gameplay-wheel-shell">
+                <div class="wheel-pointer"></div>
+                <div class="wheel" id="dare-wheel">
+                  <div class="wheel-center">Spin</div>
+                </div>
+              </div>
+            </div>
+            <div class="gameplay-panel-actions">
+              <button class="primary-action" id="spin-dare" type="button">Spin Wheel</button>
+            </div>
+          </section>
+
+          <section class="gameplay-panel">
+            <div class="result-grid gameplay-results-grid">
+              <div class="result-block">
+                <p class="result-label">Wheel Result</p>
+                <p class="result-text" id="selected-outcome">Truth, Dare, or Shot will appear here.</p>
+              </div>
+              <div class="result-block emphasis gameplay-prompt-card">
+                <p class="result-label">Prompt</p>
+                <p class="result-text large" id="selected-dare">Spin the wheel when the next player is ready.</p>
+              </div>
+            </div>
+            <div class="gameplay-panel-actions">
+              <button class="ghost-action gameplay-hidden" id="next-round-link" type="button">Next Player</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="gameplay.js"></script>
+</body>
+</html>

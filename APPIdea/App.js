@@ -84,6 +84,11 @@ export default function App() {
     return okTerm && okFilter;
   });
 
+  function openTab(nextTab) {
+    if (nextTab === "play") beginPlayFlow();
+    setTab(nextTab);
+  }
+
   function moveStep(next) {
     if (next === "players" && !selectedIds.length) return Alert.alert("Pick categories first", "Select at least one pack.");
     if ((next === "chooser" || next === "outcome") && mode === "rotation" && !players.length) {
@@ -93,8 +98,7 @@ export default function App() {
   }
 
   function addPlayer() {
-    const name = playerDraft.trim();
-    if (!name) return;
+    const name = playerDraft.trim() || nextGuestPlayerName(players);
     setPlayers((v) => [...v, name]);
     setPlayerDraft("");
   }
@@ -105,11 +109,11 @@ export default function App() {
     if (mode === "rotation" && !players.length) return Alert.alert("Add players", "Rotation mode needs at least one player.");
     const chosenIndex = mode === "random" ? Math.floor(Math.random() * pool.length) : turnIndex % pool.length;
     const segment = 360 / pool.length;
-    const next = pointerDeg.current + (5 + Math.floor(Math.random() * 3)) * 360 + chosenIndex * segment + (Math.random() - 0.5) * 8;
+    const targetAngle = chosenIndex * segment + (Math.random() - 0.5) * 8;
+    const next = pointerDeg.current + (5 + Math.floor(Math.random() * 3)) * 360 + targetAngle;
     setSpinPlayerBusy(true);
     Animated.timing(pointer, { toValue: next, duration: 3600, easing: Easing.bezier(0.12, 0.88, 0.18, 1), useNativeDriver: true }).start(() => {
-      pointerDeg.current = next % 360;
-      pointer.setValue(pointerDeg.current);
+      pointerDeg.current = next;
       setSelectedPlayer(pool[chosenIndex]);
       if (mode === "rotation" && players.length) setTurnIndex((v) => (v + 1) % players.length);
       setSpinPlayerBusy(false);
@@ -125,8 +129,7 @@ export default function App() {
     const prompt = pickPrompt(label, allPacks, selectedIds);
     setSpinWheelBusy(true);
     Animated.timing(wheel, { toValue: next, duration: 3200, easing: Easing.bezier(0.15, 0.89, 0.23, 1), useNativeDriver: true }).start(() => {
-      wheelDeg.current = next % 360;
-      wheel.setValue(wheelDeg.current);
+      wheelDeg.current = next;
       setSelectedOutcome(label);
       setSelectedPrompt(prompt);
       setSpinWheelBusy(false);
@@ -134,6 +137,12 @@ export default function App() {
   }
 
   function resetRound() {
+    beginPlayFlow();
+  }
+
+  function beginPlayFlow() {
+    pointer.stopAnimation();
+    wheel.stopAnimation();
     setStep("setup");
     setSelectedPlayer("");
     setSelectedOutcome("");
@@ -207,7 +216,7 @@ export default function App() {
           <Text style={s.brand}>After Hours</Text>
           <Text style={s.muted}>A React Native app scaffold with your real finger PNG and suspenseful spinner.</Text>
           <View style={s.nav}>{tabs.map((name) => (
-            <Pressable key={name} onPress={() => setTab(name)} style={[s.navBtn, tab === name && s.navBtnOn]}>
+            <Pressable key={name} onPress={() => openTab(name)} style={[s.navBtn, tab === name && s.navBtnOn]}>
               <Text style={s.navTxt}>{name === "browse" ? "Browse Packs" : cap(name)}</Text>
             </Pressable>
           ))}</View>
@@ -220,9 +229,9 @@ export default function App() {
               <Text style={s.hero}>Choose your kind of chaos.</Text>
               <Text style={s.copy}>Play step by step, create your own packs, and browse public packs to add into your library.</Text>
               <View style={s.row}>
-                <Button label="Play" onPress={() => setTab("play")} />
-                <Button label="Edit Dares" onPress={() => setTab("edit")} tone="soft" />
-                <Button label="Browse Packs" onPress={() => setTab("browse")} tone="soft" />
+                <Button label="Play" onPress={() => openTab("play")} />
+                <Button label="Edit Dares" onPress={() => openTab("edit")} tone="soft" />
+                <Button label="Browse Packs" onPress={() => openTab("browse")} tone="soft" />
               </View>
               <View style={s.stats}>
                 <Stat value={String(library.length)} label="My Packs" />
@@ -249,9 +258,14 @@ export default function App() {
               {step === "setup" && (
                 <Phase title="Pick the categories for this round." subtitle="Mix lite, extreme, NSFW, or drinking packs before the game starts.">
                   <View style={s.cardInner}>{allPacks.map((pack) => (
-                    <Pressable key={pack.id} onPress={() => toggleSelected(pack.id)} style={s.chip}>
-                      <View style={[s.check, selectedIds.includes(pack.id) && s.checkOn]} />
-                      <Text style={s.chipTxt}>{pack.categoryName} | {pack.intensity} | {enabledCount(pack)} active</Text>
+                    <Pressable key={pack.id} onPress={() => toggleSelected(pack.id)} style={[s.chip, selectedIds.includes(pack.id) && s.chipOn]}>
+                      <View style={[s.check, selectedIds.includes(pack.id) && s.checkOn]}>
+                        {selectedIds.includes(pack.id) && <Text style={s.checkMark}>✓</Text>}
+                      </View>
+                      <View style={s.chipCopy}>
+                        <Text style={s.chipTitle}>{pack.categoryName}</Text>
+                        <Text style={s.chipMeta}>{pack.intensity} pack  •  {enabledCount(pack)} prompts active</Text>
+                      </View>
                     </Pressable>
                   ))}</View>
                   <View style={s.rowSpread}>
@@ -268,15 +282,15 @@ export default function App() {
                     <Button label="Random Select" onPress={() => setMode("random")} tone={mode === "random" ? "primary" : "soft"} />
                   </View>
                   <Text style={s.muted}>{mode === "random" ? "Random mode can pick any player each spin. With no names, it falls back to a generic closest-player result." : "Rotation mode moves through your players in order."}</Text>
-                  <View style={s.cardInner}>
-                    <View style={s.inputRow}>
-                      <TextInput value={playerDraft} onChangeText={setPlayerDraft} placeholder="Add player name" placeholderTextColor="#8f88ae" style={s.input} />
-                      <Button label="Add" onPress={addPlayer} />
-                    </View>
-                    <View style={s.wrap}>
-                      {!players.length && <Text style={s.muted}>{mode === "random" ? "No players added yet. Random mode can still run." : "No players yet. Add names to use rotation mode."}</Text>}
-                      {players.map((player, index) => (
-                        <View key={`${player}-${index}`} style={s.pill}>
+                    <View style={s.cardInner}>
+                      <View style={s.inputRow}>
+                        <TextInput value={playerDraft} onChangeText={setPlayerDraft} placeholder="Add player name" placeholderTextColor="#8f88ae" style={s.input} />
+                        <Button label="Add" onPress={addPlayer} />
+                      </View>
+                      <View style={s.playerListWrap}>
+                        {!players.length && <Text style={s.muted}>{mode === "random" ? "No players added yet. Random mode can still run." : "No players yet. Add names to use rotation mode."}</Text>}
+                        {players.map((player, index) => (
+                          <View key={`${player}-${index}`} style={s.pill}>
                           <Text style={s.txt}>{player}</Text>
                           <Pressable onPress={() => setPlayers((items) => items.filter((_, i) => i !== index))} style={s.x}><Text style={s.txt}>x</Text></Pressable>
                         </View>
@@ -476,6 +490,13 @@ function inferType(text) {
   return "dare";
 }
 
+function nextGuestPlayerName(players) {
+  let index = 1;
+  const names = new Set(players);
+  while (names.has(`Player ${index}`)) index += 1;
+  return `Player ${index}`;
+}
+
 function cap(value) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
@@ -510,20 +531,25 @@ const s = StyleSheet.create({
   stepBtn: { paddingHorizontal: 14, paddingVertical: 14, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.05)" },
   stepBtnOn: { backgroundColor: "rgba(255,143,61,0.22)" },
   stepTxt: { color: "#f4f1ff", fontWeight: "700" },
-  chip: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 14, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
-  chipTxt: { color: "#f4f1ff", flex: 1, fontWeight: "600" },
-  check: { width: 18, height: 18, borderRadius: 99, borderWidth: 2, borderColor: "#6ee7d8" },
-  checkOn: { backgroundColor: "#ff8f3d", borderColor: "#ff8f3d" },
+  chip: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 22, paddingHorizontal: 18, paddingVertical: 18, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
+  chipOn: { backgroundColor: "rgba(255,143,61,0.12)", borderColor: "rgba(255,143,61,0.55)" },
+  chipCopy: { flex: 1, gap: 5 },
+  chipTitle: { color: "#f4f1ff", fontSize: 17, fontWeight: "800" },
+  chipMeta: { color: "#b8b2d2", fontSize: 13, fontWeight: "600" },
+  check: { width: 26, height: 26, borderRadius: 9, borderWidth: 1.5, borderColor: "#6ee7d8", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(9,10,18,0.55)" },
+  checkOn: { backgroundColor: "#ffb54a", borderColor: "#ff8f3d" },
+  checkMark: { color: "#130f17", fontSize: 15, fontWeight: "900" },
   inputRow: { flexDirection: "row", gap: 10 },
   input: { flex: 1, borderRadius: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", backgroundColor: "rgba(255,255,255,0.05)", color: "#f4f1ff", paddingHorizontal: 16, paddingVertical: 14 },
   area: { minHeight: 140 },
+  playerListWrap: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 18 },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 14 },
   pill: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 99, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
   x: { width: 24, height: 24, borderRadius: 99, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.08)" },
   center: { alignItems: "center", gap: 18 },
   disc: { width: 330, height: 330, borderRadius: 999, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
   orbit: { position: "absolute", width: 330, height: 330, alignItems: "center" },
-  pointer: { width: 128, height: 190, marginTop: -6 },
+  pointer: { width: 210, height: 150, marginLeft: 92, marginTop: 18 },
   marker: { position: "absolute", width: 94, marginLeft: -47, marginTop: -16, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 99, backgroundColor: "rgba(13,14,22,0.92)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
   markerTxt: { color: "#f4f1ff", fontSize: 12, fontWeight: "700", textAlign: "center" },
   wheelWrap: { width: 320, height: 320, alignItems: "center", justifyContent: "center" },

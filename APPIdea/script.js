@@ -1,6 +1,6 @@
 const STORAGE_KEY = "after-hours-prototype-state";
 
-const PLAY_STEPS = ["setup", "players", "chooser", "outcome"];
+const PLAY_STEPS = ["setup", "players", "ready"];
 
 const seedPublicPacks = [
   {
@@ -74,7 +74,6 @@ const seedLibraryPacks = [
 ];
 
 let state = loadState();
-
 const els = {
   navButtons: Array.from(document.querySelectorAll(".nav-button")),
   views: Array.from(document.querySelectorAll(".view")),
@@ -92,17 +91,9 @@ const els = {
   playScreens: Array.from(document.querySelectorAll(".play-screen")),
   goToPlayers: document.getElementById("go-to-players"),
   goToChooser: document.getElementById("go-to-chooser"),
-  goToOutcome: document.getElementById("go-to-outcome"),
+  startGameRoom: document.getElementById("start-game-room"),
   backStepButtons: Array.from(document.querySelectorAll("[data-back-step]")),
-  spinPlayer: document.getElementById("spin-player"),
-  spinDare: document.getElementById("spin-dare"),
   resetGame: document.getElementById("reset-game"),
-  playAgain: document.getElementById("play-again"),
-  pointerFinger: document.getElementById("pointer-finger"),
-  selectedPlayer: document.getElementById("selected-player"),
-  dareWheel: document.getElementById("dare-wheel"),
-  selectedOutcome: document.getElementById("selected-outcome"),
-  selectedDare: document.getElementById("selected-dare"),
   newPackTitle: document.getElementById("new-pack-title"),
   newPackAuthor: document.getElementById("new-pack-author"),
   newPackIntensity: document.getElementById("new-pack-intensity"),
@@ -113,7 +104,12 @@ const els = {
   browseSearch: document.getElementById("browse-search"),
   browseFilter: document.getElementById("browse-filter"),
   browseList: document.getElementById("browse-list"),
-  categoryTemplate: document.getElementById("category-chip-template")
+  categoryTemplate: document.getElementById("category-chip-template"),
+  readyPackList: document.getElementById("ready-pack-list"),
+  readyPlayerList: document.getElementById("ready-player-list"),
+  readyMode: document.getElementById("ready-mode"),
+  readyPackCount: document.getElementById("ready-pack-count"),
+  readyPlayerCount: document.getElementById("ready-player-count")
 };
 
 init();
@@ -146,12 +142,13 @@ function bindEvents() {
   });
 
   els.goToChooser.addEventListener("click", () => {
-    if (!canAdvanceToChooser()) return;
-    setPlayStep("chooser");
+    if (!canAdvanceToReady()) return;
+    setPlayStep("ready");
   });
-
-  els.goToOutcome.addEventListener("click", () => setPlayStep("outcome"));
-  els.playAgain.addEventListener("click", () => setPlayStep("setup"));
+  els.startGameRoom.addEventListener("click", () => {
+    saveState();
+    window.location.href = "gameplay.html";
+  });
 
   els.backStepButtons.forEach((button) => {
     button.addEventListener("click", () => setPlayStep(button.dataset.backStep));
@@ -162,8 +159,6 @@ function bindEvents() {
     if (event.key === "Enter") addPlayer();
   });
 
-  els.spinPlayer.addEventListener("click", spinPlayer);
-  els.spinDare.addEventListener("click", spinDare);
   els.resetGame.addEventListener("click", resetRound);
   els.createPack.addEventListener("click", createPack);
   els.browseSearch.addEventListener("input", renderBrowse);
@@ -173,23 +168,27 @@ function bindEvents() {
 function loadState() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (raw) {
-    const parsed = JSON.parse(raw);
-    return {
-      currentView: parsed.currentView || "home",
-      playStep: parsed.playStep || "setup",
-      playerMode: parsed.playerMode || "rotation",
-      libraryPacks: parsed.libraryPacks || structuredClone(seedLibraryPacks),
-      publicPacks: parsed.publicPacks || structuredClone(seedPublicPacks),
-      selectedCategoryIds: parsed.selectedCategoryIds || ["my-1", "pub-1"],
-      players: parsed.players || ["Alex", "Jamie", "Taylor"],
-      selectedPlayer: parsed.selectedPlayer || "",
-      selectedOutcome: parsed.selectedOutcome || "",
-      selectedDare: parsed.selectedDare || "",
-      currentPlayerIndex: parsed.currentPlayerIndex || 0
-    };
+    try {
+      const parsed = JSON.parse(raw);
+      return normalizeState({
+        currentView: parsed.currentView || "home",
+        playStep: parsed.playStep || "setup",
+        playerMode: parsed.playerMode || "rotation",
+        libraryPacks: parsed.libraryPacks || structuredClone(seedLibraryPacks),
+        publicPacks: parsed.publicPacks || structuredClone(seedPublicPacks),
+        selectedCategoryIds: parsed.selectedCategoryIds || ["my-1", "pub-1"],
+        players: parsed.players || ["Alex", "Jamie", "Taylor"],
+        selectedPlayer: parsed.selectedPlayer || "",
+        selectedOutcome: parsed.selectedOutcome || "",
+        selectedDare: parsed.selectedDare || "",
+        currentPlayerIndex: parsed.currentPlayerIndex || 0
+      });
+    } catch (_error) {
+      localStorage.removeItem(STORAGE_KEY);
+    }
   }
 
-  return {
+  return normalizeState({
     currentView: "home",
     playStep: "setup",
     playerMode: "rotation",
@@ -201,10 +200,11 @@ function loadState() {
     selectedOutcome: "",
     selectedDare: "",
     currentPlayerIndex: 0
-  };
+  });
 }
 
 function saveState() {
+  state = normalizeState(state);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
@@ -215,14 +215,17 @@ function render() {
   renderPlayCategories();
   renderPlayerMode();
   renderPlayers();
-  renderPlayerRing();
+  renderReadyRoom();
   renderLibrary();
   renderBrowse();
-  syncResults();
 }
 
 function setView(view, options = {}) {
   state.currentView = view;
+  if (view === "play") {
+    startPlayFlow({ skipSave: true });
+    setPlayStep("setup", { skipSave: true, force: true });
+  }
   els.navButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.view === view);
   });
@@ -248,12 +251,11 @@ function setPlayStep(step, options = {}) {
 
 function canNavigateToStep(step) {
   if (step === "players") return state.selectedCategoryIds.length > 0;
-  if (step === "chooser") return canAdvanceToChooser();
-  if (step === "outcome") return canAdvanceToChooser();
+  if (step === "ready") return canAdvanceToReady();
   return true;
 }
 
-function canAdvanceToChooser() {
+function canAdvanceToReady() {
   return state.playerMode === "random" || state.players.length > 0;
 }
 
@@ -263,16 +265,20 @@ function renderMetrics() {
 }
 
 function renderPlayCategories() {
-  const packs = [...state.libraryPacks, ...getAllPublicPacks()];
+  const packs = getPlayablePacks();
   els.playCategoryList.innerHTML = "";
 
   packs.forEach((pack) => {
     const node = els.categoryTemplate.content.firstElementChild.cloneNode(true);
     const input = node.querySelector("input");
-    const label = node.querySelector("span");
-    input.checked = state.selectedCategoryIds.includes(pack.id);
+    const title = node.querySelector(".category-chip-title");
+    const meta = node.querySelector(".category-chip-meta");
+    const selected = state.selectedCategoryIds.includes(pack.id);
+    input.checked = selected;
+    node.classList.toggle("selected", selected);
     input.addEventListener("change", () => toggleSelectedCategory(pack.id));
-    label.textContent = `${pack.categoryName} | ${pack.intensity} | ${countEnabled(pack)} active`;
+    title.textContent = pack.categoryName;
+    meta.textContent = `${pack.intensity} pack - ${countEnabled(pack)} prompts active`;
     els.playCategoryList.appendChild(node);
   });
 }
@@ -285,6 +291,44 @@ function renderPlayerMode() {
     state.playerMode === "random"
       ? "Random select mode will pick any player each spin. You can also play with no names and use a generic closest-player callout."
       : "Rotation mode will move through your players in order so everyone gets a turn.";
+}
+
+function renderReadyRoom() {
+  const selectedPacks = getPlayablePacks().filter((pack) =>
+    state.selectedCategoryIds.includes(pack.id)
+  );
+
+  els.readyPackList.innerHTML = "";
+  els.readyPlayerList.innerHTML = "";
+
+  selectedPacks.forEach((pack) => {
+    const item = document.createElement("div");
+    item.className = "ready-pill";
+    item.textContent = `${pack.categoryName} - ${pack.intensity}`;
+    els.readyPackList.appendChild(item);
+  });
+
+  state.players.forEach((player) => {
+    const item = document.createElement("div");
+    item.className = "ready-pill";
+    item.textContent = player;
+    els.readyPlayerList.appendChild(item);
+  });
+
+  if (!selectedPacks.length) {
+    els.readyPackList.innerHTML = '<div class="empty-state">Choose at least one pack in setup.</div>';
+  }
+
+  if (!state.players.length) {
+    const message = state.playerMode === "random"
+      ? "No named players yet. Random mode can still use a closest-player callout."
+      : "Add at least one player to use rotation mode.";
+    els.readyPlayerList.innerHTML = `<div class="empty-state">${message}</div>`;
+  }
+
+  els.readyMode.textContent = state.playerMode === "random" ? "Random Select" : "Rotation";
+  els.readyPackCount.textContent = String(selectedPacks.length);
+  els.readyPlayerCount.textContent = String(state.players.length);
 }
 
 function renderPlayers() {
@@ -312,29 +356,11 @@ function renderPlayers() {
       if (state.currentPlayerIndex >= state.players.length) state.currentPlayerIndex = 0;
       saveState();
       renderPlayers();
-      renderPlayerRing();
+      renderReadyRoom();
     });
 
     pill.appendChild(remove);
     els.playerList.appendChild(pill);
-  });
-}
-
-function renderPlayerRing() {
-  els.playerRing.innerHTML = "";
-  const players = state.players.length ? state.players : ["Closest Player"];
-  const total = players.length;
-
-  players.forEach((player, index) => {
-    const angle = (index / total) * Math.PI * 2 - Math.PI / 2;
-    const x = 50 + Math.cos(angle) * 38;
-    const y = 50 + Math.sin(angle) * 38;
-    const marker = document.createElement("div");
-    marker.className = "player-marker";
-    marker.style.left = `${x}%`;
-    marker.style.top = `${y}%`;
-    marker.textContent = player;
-    els.playerRing.appendChild(marker);
   });
 }
 
@@ -447,13 +473,12 @@ function renderBrowse() {
 }
 
 function addPlayer() {
-  const name = els.playerName.value.trim();
-  if (!name) return;
+  const name = els.playerName.value.trim() || nextGuestPlayerName(state.players);
   state.players.push(name);
   els.playerName.value = "";
   saveState();
   renderPlayers();
-  renderPlayerRing();
+  renderReadyRoom();
 }
 
 function setPlayerMode(mode) {
@@ -464,72 +489,7 @@ function setPlayerMode(mode) {
   saveState();
   renderPlayerMode();
   renderPlayers();
-  renderPlayerRing();
-}
-
-function spinPlayer() {
-  const players = state.players.length ? state.players : ["Closest Player"];
-  const selectedIndex = getSelectedPlayerIndex(players);
-  const player = players[selectedIndex];
-  const anglePerSlot = 360 / players.length;
-  const targetAngle = 1080 + selectedIndex * anglePerSlot;
-
-  els.pointerFinger.style.transform = `translateX(-50%) rotate(${targetAngle}deg)`;
-
-  state.selectedPlayer = player;
-  syncResults();
-  saveState();
-}
-
-function getSelectedPlayerIndex(players) {
-  if (!players.length) return 0;
-
-  if (state.playerMode === "random") {
-    return Math.floor(Math.random() * players.length);
-  }
-
-  const nextIndex = state.currentPlayerIndex % players.length;
-  state.currentPlayerIndex = (nextIndex + 1) % players.length;
-  return nextIndex;
-}
-
-function spinDare() {
-  const options = ["Truth", "Dare", "Take a Shot", "Wildcard Dare"];
-  const selectedIndex = Math.floor(Math.random() * options.length);
-  const spinAngle = 1440 + (360 - selectedIndex * 90 - 45);
-  const selectedLabel = options[selectedIndex];
-  const dare = getPromptForOutcome(selectedLabel);
-
-  els.dareWheel.style.transform = `rotate(${spinAngle}deg)`;
-  state.selectedOutcome = selectedLabel;
-  state.selectedDare = dare;
-  syncResults();
-  saveState();
-}
-
-function getPromptForOutcome(outcome) {
-  const activePacks = [...state.libraryPacks, ...getAllPublicPacks()].filter((pack) =>
-    state.selectedCategoryIds.includes(pack.id)
-  );
-  const enabledDares = activePacks.flatMap((pack) => pack.dares.filter((dare) => dare.enabled));
-
-  if (!enabledDares.length) {
-    return "No enabled prompts in the selected categories yet.";
-  }
-
-  let matchingType = "dare";
-  if (outcome === "Truth") matchingType = "truth";
-  if (outcome === "Take a Shot") matchingType = "shot";
-
-  const matchingDares = enabledDares.filter((dare) => dare.type === matchingType);
-  const pool = matchingDares.length ? matchingDares : enabledDares;
-  return pool[Math.floor(Math.random() * pool.length)].text;
-}
-
-function syncResults() {
-  els.selectedPlayer.textContent = state.selectedPlayer || "Add players or use random mode.";
-  els.selectedOutcome.textContent = state.selectedOutcome || "Truth, Dare, or Shot will appear here.";
-  els.selectedDare.textContent = state.selectedDare || "Pick categories, then spin the wheel.";
+  renderReadyRoom();
 }
 
 function toggleSelectedCategory(packId) {
@@ -539,6 +499,7 @@ function toggleSelectedCategory(packId) {
     : [...state.selectedCategoryIds, packId];
   saveState();
   renderPlayCategories();
+  renderReadyRoom();
 }
 
 function toggleDare(packId, dareId) {
@@ -550,6 +511,7 @@ function toggleDare(packId, dareId) {
   saveState();
   renderLibrary();
   renderPlayCategories();
+  renderReadyRoom();
 }
 
 function togglePublish(packId) {
@@ -570,6 +532,7 @@ function togglePublish(packId) {
   renderLibrary();
   renderBrowse();
   renderPlayCategories();
+  renderReadyRoom();
 }
 
 function addPackToLibrary(packId) {
@@ -584,6 +547,7 @@ function addPackToLibrary(packId) {
   renderLibrary();
   renderBrowse();
   renderPlayCategories();
+  renderReadyRoom();
 }
 
 function createPack() {
@@ -629,24 +593,83 @@ function createPack() {
 }
 
 function resetRound() {
+  startPlayFlow({ skipSave: true });
+  saveState();
+  setPlayStep("setup", { skipSave: true, force: true });
+}
+
+function startPlayFlow(options = {}) {
   state.playStep = "setup";
   state.selectedPlayer = "";
   state.selectedOutcome = "";
   state.selectedDare = "";
   state.currentPlayerIndex = 0;
-  els.pointerFinger.style.transform = "translateX(-50%) rotate(0deg)";
-  els.dareWheel.style.transform = "rotate(0deg)";
-  saveState();
-  setPlayStep("setup", { skipSave: true, force: true });
-  syncResults();
+  if (!options.skipSave) saveState();
 }
 
 function getAllPublicPacks() {
   const deduped = new Map();
   [...state.publicPacks, ...state.libraryPacks.filter((pack) => pack.isPublic)].forEach((pack) => {
-    deduped.set(pack.id, pack);
+    deduped.set(getPackIdentity(pack), pack);
   });
   return Array.from(deduped.values());
+}
+
+function getPlayablePacks() {
+  return state.libraryPacks;
+}
+
+function normalizeState(nextState) {
+  const libraryPacks = dedupePacksById(nextState.libraryPacks?.length ? nextState.libraryPacks : structuredClone(seedLibraryPacks));
+  const publicPacks = dedupePacksByIdentity(nextState.publicPacks?.length ? nextState.publicPacks : structuredClone(seedPublicPacks));
+  const availableCategoryIds = new Set(libraryPacks.map((pack) => pack.id));
+  const selectedCategoryIds = (nextState.selectedCategoryIds?.length ? nextState.selectedCategoryIds : ["my-1", "pub-1"])
+    .filter((id, index, ids) => availableCategoryIds.has(id) && ids.indexOf(id) === index);
+
+  return {
+    ...nextState,
+    libraryPacks,
+    publicPacks,
+    selectedCategoryIds: selectedCategoryIds.length ? selectedCategoryIds : ["my-1", "pub-1"]
+  };
+}
+
+function dedupePacksById(packs) {
+  const deduped = new Map();
+  packs.forEach((pack) => {
+    if (!pack?.id) return;
+    deduped.set(pack.id, normalizePack(pack));
+  });
+  return Array.from(deduped.values());
+}
+
+function dedupePacksByIdentity(packs) {
+  const deduped = new Map();
+  packs.forEach((pack) => {
+    if (!pack) return;
+    deduped.set(getPackIdentity(pack), normalizePack(pack));
+  });
+  return Array.from(deduped.values());
+}
+
+function normalizePack(pack) {
+  return {
+    ...pack,
+    categoryName: String(pack.categoryName || "Untitled Pack").trim(),
+    author: String(pack.author || "Anonymous").trim(),
+    source: pack.source || (pack.isPublic ? "community" : "local"),
+    dares: Array.isArray(pack.dares) ? pack.dares.map((dare, index) => ({
+      id: dare.id || `${pack.id || "pack"}-dare-${index}`,
+      text: String(dare.text || "").trim(),
+      type: dare.type || inferType(String(dare.text || "")),
+      enabled: dare.enabled !== false
+    })).filter((dare) => dare.text) : []
+  };
+}
+
+function getPackIdentity(pack) {
+  const name = String(pack?.categoryName || "").trim().toLowerCase();
+  return name || String(pack?.id || "").trim().toLowerCase();
 }
 
 function countEnabled(pack) {
@@ -658,6 +681,13 @@ function inferType(text) {
   if (lower.includes("truth") || lower.includes("who") || lower.includes("reveal")) return "truth";
   if (lower.includes("shot") || lower.includes("sip") || lower.includes("drink")) return "shot";
   return "dare";
+}
+
+function nextGuestPlayerName(players) {
+  let index = 1;
+  const names = new Set(players);
+  while (names.has(`Player ${index}`)) index += 1;
+  return `Player ${index}`;
 }
 
 function capitalize(value) {

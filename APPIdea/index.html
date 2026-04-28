@@ -88,8 +88,7 @@
         <div class="phase-progress">
           <button class="phase-dot active" data-step="setup">1. Setup</button>
           <button class="phase-dot" data-step="players">2. Players</button>
-          <button class="phase-dot" data-step="chooser">3. Choose Player</button>
-          <button class="phase-dot" data-step="outcome">4. Spin Outcome</button>
+          <button class="phase-dot" data-step="ready">3. Ready Room</button>
         </div>
 
         <div class="play-flow">
@@ -142,80 +141,51 @@
             </div>
             <div class="play-nav">
               <button class="ghost-action" data-back-step="setup">Back</button>
-              <button class="primary-action" id="go-to-chooser">Next: Choose Player</button>
+              <button class="primary-action" id="go-to-chooser">Next: Ready Room</button>
             </div>
           </section>
 
-          <section class="play-screen" data-step-screen="chooser">
-            <div class="play-screen-inner spotlight">
-              <div class="play-copy center">
+          <section class="play-screen" data-step-screen="ready">
+            <div class="play-screen-inner">
+              <div class="play-copy">
                 <p class="eyebrow">Phase 3</p>
-                <h3>Spin the finger and lock in the next player.</h3>
+                <h3>Everything is set. Give the room a final check.</h3>
                 <p class="section-copy">
-                  Your finger pointer image is now the center piece of the player picker.
+                  This page connects setup to gameplay so you can review the lobby once before the first round starts.
                 </p>
               </div>
 
-              <div class="chooser-stage">
-                <div class="pointer-disc">
-                  <div class="player-ring" id="player-ring"></div>
-                  <img
-                    src="assets/finger-pointer.svg"
-                    alt="Finger pointer"
-                    class="pointer-finger-image"
-                    id="pointer-finger"
-                  />
+              <div class="ready-grid">
+                <div class="ready-card">
+                  <p class="sidebar-label">Selected Packs</p>
+                  <div id="ready-pack-list" class="ready-list"></div>
                 </div>
-                <div class="result-block emphasis chooser-result">
-                  <p class="result-label">Selected Player</p>
-                  <p class="result-text large" id="selected-player">Add players or use random mode.</p>
+                <div class="ready-card">
+                  <p class="sidebar-label">Players</p>
+                  <div id="ready-player-list" class="ready-list"></div>
+                </div>
+                <div class="ready-card">
+                  <p class="sidebar-label">Round Setup</p>
+                  <div class="ready-stats">
+                    <div class="ready-stat">
+                      <span class="ready-stat-value" id="ready-mode">Rotation</span>
+                      <span class="ready-stat-label">Selection Mode</span>
+                    </div>
+                    <div class="ready-stat">
+                      <span class="ready-stat-value" id="ready-pack-count">0</span>
+                      <span class="ready-stat-label">Active Packs</span>
+                    </div>
+                    <div class="ready-stat">
+                      <span class="ready-stat-value" id="ready-player-count">0</span>
+                      <span class="ready-stat-label">Players in Lobby</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
             <div class="play-nav">
               <button class="ghost-action" data-back-step="players">Back</button>
-              <div class="play-nav-actions">
-                <button class="primary-action" id="spin-player">Spin Finger</button>
-                <button class="secondary-action" id="go-to-outcome">Next: Spin Outcome</button>
-              </div>
-            </div>
-          </section>
-
-          <section class="play-screen" data-step-screen="outcome">
-            <div class="play-screen-inner spotlight">
-              <div class="play-copy center">
-                <p class="eyebrow">Phase 4</p>
-                <h3>Spin the wheel to decide what happens next.</h3>
-                <p class="section-copy">
-                  The wheel picks truth, dare, shot, or wildcard, then pulls a matching prompt from your active packs.
-                </p>
-              </div>
-
-              <div class="outcome-stage">
-                <div class="wheel-shell">
-                  <div class="wheel-pointer"></div>
-                  <div class="wheel" id="dare-wheel">
-                    <div class="wheel-center">Spin</div>
-                  </div>
-                </div>
-                <div class="result-grid">
-                  <div class="result-block">
-                    <p class="result-label">Wheel Result</p>
-                    <p class="result-text" id="selected-outcome">Truth, Dare, or Shot will appear here.</p>
-                  </div>
-                  <div class="result-block emphasis">
-                    <p class="result-label">Dare / Prompt</p>
-                    <p class="result-text large" id="selected-dare">Pick categories, then spin the wheel.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="play-nav">
-              <button class="ghost-action" data-back-step="chooser">Back</button>
-              <div class="play-nav-actions">
-                <button class="primary-action" id="spin-dare">Spin Wheel</button>
-                <button class="secondary-action" id="play-again">Play Again</button>
-              </div>
+              <button class="primary-action" id="start-game-room">Open Gameplay Page</button>
             </div>
           </section>
         </div>
@@ -285,7 +255,11 @@
   <template id="category-chip-template">
     <label class="category-chip">
       <input type="checkbox" />
-      <span></span>
+      <span class="category-chip-check" aria-hidden="true"></span>
+      <span class="category-chip-copy">
+        <strong class="category-chip-title"></strong>
+        <span class="category-chip-meta"></span>
+      </span>
     </label>
   </template>
 

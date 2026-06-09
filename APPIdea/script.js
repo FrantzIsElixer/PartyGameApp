@@ -1,15 +1,19 @@
-const STORAGE_KEY = "after-hours-prototype-state";
+// script.js — After Hours Prototype (improved)
+// Fixes applied:
+// #1  No duplicate code between script.js / gameplay.js (each file is self-contained but shared helpers are defined once per file)
+// #4  inferType() uses expanded keyword list + [truth]/[dare]/[shot] prefix syntax
+// #5  Inline validation feedback on editor form and player step
+// (gameplay-specific fixes #2,#3,#6,#7,#8,#9 are in gameplay.js)
 
+const STORAGE_KEY = "after-hours-prototype-state";
 const PLAY_STEPS = ["setup", "players", "ready"];
+
+// ─── Seed data ────────────────────────────────────────────────────────────────
 
 const seedPublicPacks = [
   {
-    id: "pub-1",
-    categoryName: "Warm Up Energy",
-    author: "HouseHost",
-    isPublic: true,
-    intensity: "Lite",
-    source: "community",
+    id: "pub-1", categoryName: "Warm Up Energy", author: "HouseHost",
+    isPublic: true, intensity: "Lite", source: "community",
     dares: [
       { id: "d1", text: "Do your best celebrity impression for 20 seconds.", type: "dare", enabled: true },
       { id: "d2", text: "Who here would survive longest in a zombie apocalypse?", type: "truth", enabled: true },
@@ -17,12 +21,8 @@ const seedPublicPacks = [
     ]
   },
   {
-    id: "pub-2",
-    categoryName: "Wild Night Out",
-    author: "User123",
-    isPublic: true,
-    intensity: "Extreme",
-    source: "community",
+    id: "pub-2", categoryName: "Wild Night Out", author: "User123",
+    isPublic: true, intensity: "Extreme", source: "community",
     dares: [
       { id: "d4", text: "Text someone in the room using only song lyrics for one minute.", type: "dare", enabled: true },
       { id: "d5", text: "Take a shot or reveal your most chaotic drunk story.", type: "shot", enabled: true },
@@ -30,12 +30,8 @@ const seedPublicPacks = [
     ]
   },
   {
-    id: "pub-3",
-    categoryName: "After Dark",
-    author: "NightShift",
-    isPublic: true,
-    intensity: "NSFW",
-    source: "community",
+    id: "pub-3", categoryName: "After Dark", author: "NightShift",
+    isPublic: true, intensity: "NSFW", source: "community",
     dares: [
       { id: "d7", text: "Reveal your boldest first-date move.", type: "truth", enabled: true },
       { id: "d8", text: "Whisper your best fake pickup line to the person on your left.", type: "dare", enabled: true },
@@ -43,12 +39,8 @@ const seedPublicPacks = [
     ]
   },
   {
-    id: "pub-4",
-    categoryName: "Bar Cart Roulette",
-    author: "MixMaster",
-    isPublic: true,
-    intensity: "Drinking",
-    source: "community",
+    id: "pub-4", categoryName: "Bar Cart Roulette", author: "MixMaster",
+    isPublic: true, intensity: "Drinking", source: "community",
     dares: [
       { id: "d10", text: "Invent a house cocktail name for the person across from you.", type: "dare", enabled: true },
       { id: "d11", text: "Take a shot of your choice.", type: "shot", enabled: true },
@@ -59,12 +51,8 @@ const seedPublicPacks = [
 
 const seedLibraryPacks = [
   {
-    id: "my-1",
-    categoryName: "Friends Only",
-    author: "You",
-    isPublic: false,
-    intensity: "Lite",
-    source: "local",
+    id: "my-1", categoryName: "Friends Only", author: "You",
+    isPublic: false, intensity: "Lite", source: "local",
     dares: [
       { id: "m1", text: "Swap phones with someone for one selfie.", type: "dare", enabled: true },
       { id: "m2", text: "Truth: who was your very first crush?", type: "truth", enabled: true },
@@ -73,7 +61,12 @@ const seedLibraryPacks = [
   }
 ];
 
+// ─── State ────────────────────────────────────────────────────────────────────
+
 let state = loadState();
+
+// ─── DOM refs ─────────────────────────────────────────────────────────────────
+
 const els = {
   navButtons: Array.from(document.querySelectorAll(".nav-button")),
   views: Array.from(document.querySelectorAll(".view")),
@@ -84,7 +77,7 @@ const els = {
   playerName: document.getElementById("player-name"),
   addPlayer: document.getElementById("add-player"),
   playerList: document.getElementById("player-list"),
-  playerRing: document.getElementById("player-ring"),
+  playersError: document.getElementById("players-error"),
   modeButtons: Array.from(document.querySelectorAll(".mode-button")),
   modeInfo: document.getElementById("mode-info"),
   phaseDots: Array.from(document.querySelectorAll(".phase-dot")),
@@ -94,12 +87,15 @@ const els = {
   startGameRoom: document.getElementById("start-game-room"),
   backStepButtons: Array.from(document.querySelectorAll("[data-back-step]")),
   resetGame: document.getElementById("reset-game"),
+  setupHint: document.getElementById("setup-hint"),
   newPackTitle: document.getElementById("new-pack-title"),
   newPackAuthor: document.getElementById("new-pack-author"),
   newPackIntensity: document.getElementById("new-pack-intensity"),
   newPackPublic: document.getElementById("new-pack-public"),
   newPackDares: document.getElementById("new-pack-dares"),
   createPack: document.getElementById("create-pack"),
+  errorTitle: document.getElementById("error-title"),
+  errorDares: document.getElementById("error-dares"),
   libraryList: document.getElementById("library-list"),
   browseSearch: document.getElementById("browse-search"),
   browseFilter: document.getElementById("browse-filter"),
@@ -114,99 +110,57 @@ const els = {
 
 init();
 
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+
 function init() {
   bindEvents();
   render();
 }
 
 function bindEvents() {
-  els.navButtons.forEach((button) => {
-    button.addEventListener("click", () => setView(button.dataset.view));
-  });
-
-  els.jumpButtons.forEach((button) => {
-    button.addEventListener("click", () => setView(button.dataset.jump));
-  });
-
-  els.modeButtons.forEach((button) => {
-    button.addEventListener("click", () => setPlayerMode(button.dataset.mode));
-  });
-
-  els.phaseDots.forEach((button) => {
-    button.addEventListener("click", () => setPlayStep(button.dataset.step));
-  });
+  els.navButtons.forEach((btn) => btn.addEventListener("click", () => setView(btn.dataset.view)));
+  els.jumpButtons.forEach((btn) => btn.addEventListener("click", () => setView(btn.dataset.jump)));
+  els.modeButtons.forEach((btn) => btn.addEventListener("click", () => setPlayerMode(btn.dataset.mode)));
+  els.phaseDots.forEach((btn) => btn.addEventListener("click", () => setPlayStep(btn.dataset.step)));
 
   els.goToPlayers.addEventListener("click", () => {
-    if (!state.selectedCategoryIds.length) return;
+    if (!state.selectedCategoryIds.length) {
+      els.setupHint.style.color = "var(--accent-2)";
+      return;
+    }
     setPlayStep("players");
   });
 
+  // Fix #5: validate before advancing to ready room
   els.goToChooser.addEventListener("click", () => {
-    if (!canAdvanceToReady()) return;
+    if (!canAdvanceToReady()) {
+      showEl(els.playersError);
+      return;
+    }
+    hideEl(els.playersError);
     setPlayStep("ready");
   });
+
   els.startGameRoom.addEventListener("click", () => {
     saveState();
     window.location.href = "gameplay.html";
   });
 
-  els.backStepButtons.forEach((button) => {
-    button.addEventListener("click", () => setPlayStep(button.dataset.backStep));
-  });
-
+  els.backStepButtons.forEach((btn) => btn.addEventListener("click", () => setPlayStep(btn.dataset.backStep)));
   els.addPlayer.addEventListener("click", addPlayer);
-  els.playerName.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") addPlayer();
-  });
-
+  els.playerName.addEventListener("keydown", (e) => { if (e.key === "Enter") addPlayer(); });
   els.resetGame.addEventListener("click", resetRound);
+
+  // Fix #5: validate pack creation form
   els.createPack.addEventListener("click", createPack);
+  els.newPackTitle.addEventListener("input", () => hideEl(els.errorTitle));
+  els.newPackDares.addEventListener("input", () => hideEl(els.errorDares));
+
   els.browseSearch.addEventListener("input", renderBrowse);
   els.browseFilter.addEventListener("change", renderBrowse);
 }
 
-function loadState() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw);
-      return normalizeState({
-        currentView: parsed.currentView || "home",
-        playStep: parsed.playStep || "setup",
-        playerMode: parsed.playerMode || "rotation",
-        libraryPacks: parsed.libraryPacks || structuredClone(seedLibraryPacks),
-        publicPacks: parsed.publicPacks || structuredClone(seedPublicPacks),
-        selectedCategoryIds: parsed.selectedCategoryIds || ["my-1", "pub-1"],
-        players: parsed.players || ["Alex", "Jamie", "Taylor"],
-        selectedPlayer: parsed.selectedPlayer || "",
-        selectedOutcome: parsed.selectedOutcome || "",
-        selectedDare: parsed.selectedDare || "",
-        currentPlayerIndex: parsed.currentPlayerIndex || 0
-      });
-    } catch (_error) {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }
-
-  return normalizeState({
-    currentView: "home",
-    playStep: "setup",
-    playerMode: "rotation",
-    libraryPacks: structuredClone(seedLibraryPacks),
-    publicPacks: structuredClone(seedPublicPacks),
-    selectedCategoryIds: ["my-1", "pub-1"],
-    players: ["Alex", "Jamie", "Taylor"],
-    selectedPlayer: "",
-    selectedOutcome: "",
-    selectedDare: "",
-    currentPlayerIndex: 0
-  });
-}
-
-function saveState() {
-  state = normalizeState(state);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
+// ─── Render ───────────────────────────────────────────────────────────────────
 
 function render() {
   setView(state.currentView, { skipSave: true });
@@ -226,26 +180,17 @@ function setView(view, options = {}) {
     startPlayFlow({ skipSave: true });
     setPlayStep("setup", { skipSave: true, force: true });
   }
-  els.navButtons.forEach((button) => {
-    button.classList.toggle("active", button.dataset.view === view);
-  });
-  els.views.forEach((section) => {
-    section.classList.toggle("active", section.id === `view-${view}`);
-  });
+  els.navButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.view === view));
+  els.views.forEach((sec) => sec.classList.toggle("active", sec.id === `view-${view}`));
   if (!options.skipSave) saveState();
 }
 
 function setPlayStep(step, options = {}) {
   if (!PLAY_STEPS.includes(step)) return;
   if (!options.force && !canNavigateToStep(step)) return;
-
   state.playStep = step;
-  els.phaseDots.forEach((dot) => {
-    dot.classList.toggle("active", dot.dataset.step === step);
-  });
-  els.playScreens.forEach((screen) => {
-    screen.classList.toggle("active", screen.dataset.stepScreen === step);
-  });
+  els.phaseDots.forEach((dot) => dot.classList.toggle("active", dot.dataset.step === step));
+  els.playScreens.forEach((screen) => screen.classList.toggle("active", screen.dataset.stepScreen === step));
   if (!options.skipSave) saveState();
 }
 
@@ -267,7 +212,6 @@ function renderMetrics() {
 function renderPlayCategories() {
   const packs = getPlayablePacks();
   els.playCategoryList.innerHTML = "";
-
   packs.forEach((pack) => {
     const node = els.categoryTemplate.content.firstElementChild.cloneNode(true);
     const input = node.querySelector("input");
@@ -278,54 +222,41 @@ function renderPlayCategories() {
     node.classList.toggle("selected", selected);
     input.addEventListener("change", () => toggleSelectedCategory(pack.id));
     title.textContent = pack.categoryName;
-    meta.textContent = `${pack.intensity} pack - ${countEnabled(pack)} prompts active`;
+    meta.textContent = `${pack.intensity} pack · ${countEnabled(pack)} prompts active`;
     els.playCategoryList.appendChild(node);
   });
 }
 
 function renderPlayerMode() {
-  els.modeButtons.forEach((button) => {
-    button.classList.toggle("active", button.dataset.mode === state.playerMode);
-  });
-  els.modeInfo.textContent =
-    state.playerMode === "random"
-      ? "Random select mode will pick any player each spin. You can also play with no names and use a generic closest-player callout."
-      : "Rotation mode will move through your players in order so everyone gets a turn.";
+  els.modeButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.mode === state.playerMode));
+  els.modeInfo.textContent = state.playerMode === "random"
+    ? "Random select mode will pick any player each spin. You can also play with no names and use a generic closest-player callout."
+    : "Rotation mode will move through your players in order so everyone gets a turn.";
 }
 
 function renderReadyRoom() {
-  const selectedPacks = getPlayablePacks().filter((pack) =>
-    state.selectedCategoryIds.includes(pack.id)
-  );
-
+  const selectedPacks = getPlayablePacks().filter((p) => state.selectedCategoryIds.includes(p.id));
   els.readyPackList.innerHTML = "";
   els.readyPlayerList.innerHTML = "";
-
   selectedPacks.forEach((pack) => {
     const item = document.createElement("div");
     item.className = "ready-pill";
-    item.textContent = `${pack.categoryName} - ${pack.intensity}`;
+    item.textContent = `${pack.categoryName} — ${pack.intensity}`;
     els.readyPackList.appendChild(item);
   });
-
   state.players.forEach((player) => {
     const item = document.createElement("div");
     item.className = "ready-pill";
     item.textContent = player;
     els.readyPlayerList.appendChild(item);
   });
-
-  if (!selectedPacks.length) {
-    els.readyPackList.innerHTML = '<div class="empty-state">Choose at least one pack in setup.</div>';
-  }
-
+  if (!selectedPacks.length) els.readyPackList.innerHTML = '<div class="empty-state">Choose at least one pack in setup.</div>';
   if (!state.players.length) {
-    const message = state.playerMode === "random"
+    const msg = state.playerMode === "random"
       ? "No named players yet. Random mode can still use a closest-player callout."
       : "Add at least one player to use rotation mode.";
-    els.readyPlayerList.innerHTML = `<div class="empty-state">${message}</div>`;
+    els.readyPlayerList.innerHTML = `<div class="empty-state">${msg}</div>`;
   }
-
   els.readyMode.textContent = state.playerMode === "random" ? "Random Select" : "Rotation";
   els.readyPackCount.textContent = String(selectedPacks.length);
   els.readyPlayerCount.textContent = String(state.players.length);
@@ -333,24 +264,20 @@ function renderReadyRoom() {
 
 function renderPlayers() {
   els.playerList.innerHTML = "";
-
   if (!state.players.length) {
-    const message =
-      state.playerMode === "random"
-        ? "No players added yet. Random mode can still run with a generic closest-player result."
-        : "No players yet. Add names to use rotation mode.";
-    els.playerList.innerHTML = `<div class="empty-state">${message}</div>`;
+    const msg = state.playerMode === "random"
+      ? "No players added yet. Random mode can still run with a generic closest-player result."
+      : "No players yet. Add names to use rotation mode.";
+    els.playerList.innerHTML = `<div class="empty-state">${msg}</div>`;
     return;
   }
-
   state.players.forEach((player, index) => {
     const pill = document.createElement("div");
     pill.className = "player-pill";
     pill.innerHTML = `<span>${escapeHtml(player)}</span>`;
-
     const remove = document.createElement("button");
     remove.type = "button";
-    remove.textContent = "x";
+    remove.textContent = "×";
     remove.addEventListener("click", () => {
       state.players.splice(index, 1);
       if (state.currentPlayerIndex >= state.players.length) state.currentPlayerIndex = 0;
@@ -358,7 +285,6 @@ function renderPlayers() {
       renderPlayers();
       renderReadyRoom();
     });
-
     pill.appendChild(remove);
     els.playerList.appendChild(pill);
   });
@@ -366,23 +292,18 @@ function renderPlayers() {
 
 function renderLibrary() {
   els.libraryList.innerHTML = "";
-
   if (!state.libraryPacks.length) {
     els.libraryList.innerHTML = '<div class="empty-state">Your custom or downloaded packs will show up here.</div>';
     return;
   }
-
   state.libraryPacks.forEach((pack) => {
     const wrapper = document.createElement("article");
     wrapper.className = "library-pack";
-
     const dareLines = pack.dares.map((dare) => `
       <div class="dare-line ${dare.enabled ? "" : "disabled"}">
         <div>
           <strong>${escapeHtml(dare.text)}</strong>
-          <div class="tag-row">
-            <span class="tag">${capitalize(dare.type)}</span>
-          </div>
+          <div class="tag-row"><span class="tag">${capitalize(dare.type)}</span></div>
         </div>
         <label class="toggle-row">
           <input type="checkbox" data-pack="${pack.id}" data-dare="${dare.id}" ${dare.enabled ? "checked" : ""} />
@@ -390,7 +311,6 @@ function renderLibrary() {
         </label>
       </div>
     `).join("");
-
     wrapper.innerHTML = `
       <div class="pack-top">
         <div>
@@ -399,25 +319,15 @@ function renderLibrary() {
         </div>
         <div class="tag-row">
           <span class="tag">${countEnabled(pack)} enabled</span>
-          <button class="mini-action" data-publish="${pack.id}">
-            ${pack.isPublic ? "Unpublish" : "Publish"}
-          </button>
+          <button class="mini-action" data-publish="${pack.id}">${pack.isPublic ? "Unpublish" : "Publish"}</button>
         </div>
       </div>
       <div class="pack-dares">${dareLines}</div>
     `;
-
     wrapper.querySelectorAll('input[type="checkbox"][data-pack]').forEach((toggle) => {
-      toggle.addEventListener("change", (event) => {
-        const { pack: packId, dare: dareId } = event.target.dataset;
-        toggleDare(packId, dareId);
-      });
+      toggle.addEventListener("change", (e) => toggleDare(e.target.dataset.pack, e.target.dataset.dare));
     });
-
-    wrapper.querySelector("[data-publish]").addEventListener("click", (event) => {
-      togglePublish(event.currentTarget.dataset.publish);
-    });
-
+    wrapper.querySelector("[data-publish]").addEventListener("click", (e) => togglePublish(e.currentTarget.dataset.publish));
     els.libraryList.appendChild(wrapper);
   });
 }
@@ -426,24 +336,20 @@ function renderBrowse() {
   const term = els.browseSearch.value.trim().toLowerCase();
   const filter = els.browseFilter.value;
   const packs = getAllPublicPacks().filter((pack) => {
-    const matchesTerm =
-      !term ||
-      pack.categoryName.toLowerCase().includes(term) ||
-      pack.author.toLowerCase().includes(term) ||
-      pack.dares.some((dare) => dare.text.toLowerCase().includes(term));
+    const matchesTerm = !term
+      || pack.categoryName.toLowerCase().includes(term)
+      || pack.author.toLowerCase().includes(term)
+      || pack.dares.some((d) => d.text.toLowerCase().includes(term));
     const matchesFilter = filter === "all" || pack.intensity === filter;
     return matchesTerm && matchesFilter;
   });
-
   els.browseList.innerHTML = "";
-
   if (!packs.length) {
     els.browseList.innerHTML = '<div class="empty-state">No public packs match that search yet.</div>';
     return;
   }
-
   packs.forEach((pack) => {
-    const addedAlready = state.libraryPacks.some((libraryPack) => libraryPack.id === pack.id || libraryPack.categoryName === pack.categoryName);
+    const addedAlready = state.libraryPacks.some((lp) => lp.id === pack.id || lp.categoryName === pack.categoryName);
     const card = document.createElement("article");
     card.className = "browse-card";
     card.innerHTML = `
@@ -452,30 +358,27 @@ function renderBrowse() {
           <h3>${escapeHtml(pack.categoryName)}</h3>
           <p>by ${escapeHtml(pack.author)}</p>
         </div>
-        <button class="primary-action small" data-add="${pack.id}" ${addedAlready ? "disabled" : ""}>
-          ${addedAlready ? "Added" : "Add to Library"}
-        </button>
+        <button class="primary-action small" data-add="${pack.id}" ${addedAlready ? "disabled" : ""}>${addedAlready ? "Added" : "Add to Library"}</button>
       </div>
       <div class="tag-row">
         <span class="tag">${pack.intensity}</span>
         <span class="tag">${pack.dares.length} prompts</span>
         <span class="tag">${pack.isPublic ? "Public" : "Private"}</span>
       </div>
-      <p>${pack.dares.slice(0, 2).map((dare) => escapeHtml(dare.text)).join(" | ")}</p>
+      <p>${pack.dares.slice(0, 2).map((d) => escapeHtml(d.text)).join(" · ")}</p>
     `;
-
-    card.querySelector("[data-add]").addEventListener("click", (event) => {
-      addPackToLibrary(event.currentTarget.dataset.add);
-    });
-
+    card.querySelector("[data-add]").addEventListener("click", (e) => addPackToLibrary(e.currentTarget.dataset.add));
     els.browseList.appendChild(card);
   });
 }
+
+// ─── Actions ──────────────────────────────────────────────────────────────────
 
 function addPlayer() {
   const name = els.playerName.value.trim() || nextGuestPlayerName(state.players);
   state.players.push(name);
   els.playerName.value = "";
+  hideEl(els.playersError);
   saveState();
   renderPlayers();
   renderReadyRoom();
@@ -483,9 +386,7 @@ function addPlayer() {
 
 function setPlayerMode(mode) {
   state.playerMode = mode;
-  if (mode === "rotation" && !state.players.length) {
-    state.selectedPlayer = "";
-  }
+  if (mode === "rotation" && !state.players.length) state.selectedPlayer = "";
   saveState();
   renderPlayerMode();
   renderPlayers();
@@ -503,9 +404,9 @@ function toggleSelectedCategory(packId) {
 }
 
 function toggleDare(packId, dareId) {
-  const pack = state.libraryPacks.find((item) => item.id === packId);
+  const pack = state.libraryPacks.find((p) => p.id === packId);
   if (!pack) return;
-  const dare = pack.dares.find((item) => item.id === dareId);
+  const dare = pack.dares.find((d) => d.id === dareId);
   if (!dare) return;
   dare.enabled = !dare.enabled;
   saveState();
@@ -515,18 +416,15 @@ function toggleDare(packId, dareId) {
 }
 
 function togglePublish(packId) {
-  const pack = state.libraryPacks.find((item) => item.id === packId);
+  const pack = state.libraryPacks.find((p) => p.id === packId);
   if (!pack) return;
-
   pack.isPublic = !pack.isPublic;
-  const existingPublicIndex = state.publicPacks.findIndex((item) => item.id === pack.id);
-
-  if (pack.isPublic && existingPublicIndex === -1) {
+  const existingIdx = state.publicPacks.findIndex((p) => p.id === pack.id);
+  if (pack.isPublic && existingIdx === -1) {
     state.publicPacks.unshift(structuredClone({ ...pack, source: "community" }));
-  } else if (!pack.isPublic && existingPublicIndex >= 0) {
-    state.publicPacks.splice(existingPublicIndex, 1);
+  } else if (!pack.isPublic && existingIdx >= 0) {
+    state.publicPacks.splice(existingIdx, 1);
   }
-
   saveState();
   renderMetrics();
   renderLibrary();
@@ -536,11 +434,10 @@ function togglePublish(packId) {
 }
 
 function addPackToLibrary(packId) {
-  const pack = state.publicPacks.find((item) => item.id === packId);
+  const pack = state.publicPacks.find((p) => p.id === packId);
   if (!pack) return;
-  const exists = state.libraryPacks.some((item) => item.id === pack.id || item.categoryName === pack.categoryName);
+  const exists = state.libraryPacks.some((p) => p.id === pack.id || p.categoryName === pack.categoryName);
   if (exists) return;
-
   state.libraryPacks.unshift(structuredClone({ ...pack, source: "local" }));
   saveState();
   renderMetrics();
@@ -550,37 +447,31 @@ function addPackToLibrary(packId) {
   renderReadyRoom();
 }
 
+// Fix #5: validation on pack creation
 function createPack() {
   const title = els.newPackTitle.value.trim();
   const author = els.newPackAuthor.value.trim() || "Anonymous";
   const intensity = els.newPackIntensity.value;
   const isPublic = els.newPackPublic.checked;
-  const lines = els.newPackDares.value.split("\n").map((line) => line.trim()).filter(Boolean);
+  const rawLines = els.newPackDares.value.split("\n").map((l) => l.trim()).filter(Boolean);
 
-  if (!title || !lines.length) return;
+  let valid = true;
+  if (!title) { showEl(els.errorTitle); valid = false; } else hideEl(els.errorTitle);
+  if (!rawLines.length) { showEl(els.errorDares); valid = false; } else hideEl(els.errorDares);
+  if (!valid) return;
 
   const stamp = Date.now();
-  const dares = lines.map((text, index) => ({
-    id: `custom-${stamp}-${index}`,
-    text,
-    type: inferType(text),
-    enabled: true
-  }));
+  // Fix #4: parse [truth]/[dare]/[shot] prefix tags
+  const dares = rawLines.map((line, index) => {
+    const prefixMatch = line.match(/^\[(truth|dare|shot|wildcard)\]\s*/i);
+    const type = prefixMatch ? prefixMatch[1].toLowerCase() : inferType(line);
+    const text = prefixMatch ? line.slice(prefixMatch[0].length).trim() : line;
+    return { id: `custom-${stamp}-${index}`, text, type, enabled: true };
+  }).filter((d) => d.text);
 
-  const pack = {
-    id: `custom-${stamp}`,
-    categoryName: title,
-    author,
-    isPublic,
-    intensity,
-    source: "local",
-    dares
-  };
-
+  const pack = { id: `custom-${stamp}`, categoryName: title, author, isPublic, intensity, source: "local", dares };
   state.libraryPacks.unshift(pack);
-  if (isPublic) {
-    state.publicPacks.unshift(structuredClone({ ...pack, source: "community" }));
-  }
+  if (isPublic) state.publicPacks.unshift(structuredClone({ ...pack, source: "community" }));
 
   els.newPackTitle.value = "";
   els.newPackAuthor.value = "";
@@ -604,13 +495,17 @@ function startPlayFlow(options = {}) {
   state.selectedOutcome = "";
   state.selectedDare = "";
   state.currentPlayerIndex = 0;
+  state.roundCount = 0;
+  state.playerTurnCounts = {};
   if (!options.skipSave) saveState();
 }
 
+// ─── Data helpers ─────────────────────────────────────────────────────────────
+
 function getAllPublicPacks() {
   const deduped = new Map();
-  [...state.publicPacks, ...state.libraryPacks.filter((pack) => pack.isPublic)].forEach((pack) => {
-    deduped.set(getPackIdentity(pack), pack);
+  [...state.publicPacks, ...state.libraryPacks.filter((p) => p.isPublic)].forEach((p) => {
+    deduped.set(getPackIdentity(p), p);
   });
   return Array.from(deduped.values());
 }
@@ -619,37 +514,70 @@ function getPlayablePacks() {
   return state.libraryPacks;
 }
 
+// ─── State persistence ────────────────────────────────────────────────────────
+
+function loadState() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      return normalizeState({
+        currentView: parsed.currentView || "home",
+        playStep: parsed.playStep || "setup",
+        playerMode: parsed.playerMode || "rotation",
+        libraryPacks: parsed.libraryPacks || structuredClone(seedLibraryPacks),
+        publicPacks: parsed.publicPacks || structuredClone(seedPublicPacks),
+        selectedCategoryIds: parsed.selectedCategoryIds || ["my-1", "pub-1"],
+        players: parsed.players || ["Alex", "Jamie", "Taylor"],
+        selectedPlayer: parsed.selectedPlayer || "",
+        selectedOutcome: parsed.selectedOutcome || "",
+        selectedDare: parsed.selectedDare || "",
+        currentPlayerIndex: parsed.currentPlayerIndex || 0,
+        roundCount: parsed.roundCount || 0,
+        playerTurnCounts: parsed.playerTurnCounts || {}
+      });
+    } catch (_) { localStorage.removeItem(STORAGE_KEY); }
+  }
+  return normalizeState({
+    currentView: "home", playStep: "setup", playerMode: "rotation",
+    libraryPacks: structuredClone(seedLibraryPacks),
+    publicPacks: structuredClone(seedPublicPacks),
+    selectedCategoryIds: ["my-1", "pub-1"],
+    players: ["Alex", "Jamie", "Taylor"],
+    selectedPlayer: "", selectedOutcome: "", selectedDare: "",
+    currentPlayerIndex: 0, roundCount: 0, playerTurnCounts: {}
+  });
+}
+
+function saveState() {
+  state = normalizeState(state);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+// ─── Normalizers ──────────────────────────────────────────────────────────────
+
 function normalizeState(nextState) {
   const libraryPacks = dedupePacksById(nextState.libraryPacks?.length ? nextState.libraryPacks : structuredClone(seedLibraryPacks));
   const publicPacks = dedupePacksByIdentity(nextState.publicPacks?.length ? nextState.publicPacks : structuredClone(seedPublicPacks));
-  const availableCategoryIds = new Set(libraryPacks.map((pack) => pack.id));
+  const availableIds = new Set(libraryPacks.map((p) => p.id));
   const selectedCategoryIds = (nextState.selectedCategoryIds?.length ? nextState.selectedCategoryIds : ["my-1", "pub-1"])
-    .filter((id, index, ids) => availableCategoryIds.has(id) && ids.indexOf(id) === index);
-
+    .filter((id, i, ids) => availableIds.has(id) && ids.indexOf(id) === i);
   return {
-    ...nextState,
-    libraryPacks,
-    publicPacks,
+    ...nextState, libraryPacks, publicPacks,
     selectedCategoryIds: selectedCategoryIds.length ? selectedCategoryIds : ["my-1", "pub-1"]
   };
 }
 
 function dedupePacksById(packs) {
-  const deduped = new Map();
-  packs.forEach((pack) => {
-    if (!pack?.id) return;
-    deduped.set(pack.id, normalizePack(pack));
-  });
-  return Array.from(deduped.values());
+  const map = new Map();
+  packs.forEach((p) => { if (p?.id) map.set(p.id, normalizePack(p)); });
+  return Array.from(map.values());
 }
 
 function dedupePacksByIdentity(packs) {
-  const deduped = new Map();
-  packs.forEach((pack) => {
-    if (!pack) return;
-    deduped.set(getPackIdentity(pack), normalizePack(pack));
-  });
-  return Array.from(deduped.values());
+  const map = new Map();
+  packs.forEach((p) => { if (p) map.set(getPackIdentity(p), normalizePack(p)); });
+  return Array.from(map.values());
 }
 
 function normalizePack(pack) {
@@ -658,12 +586,12 @@ function normalizePack(pack) {
     categoryName: String(pack.categoryName || "Untitled Pack").trim(),
     author: String(pack.author || "Anonymous").trim(),
     source: pack.source || (pack.isPublic ? "community" : "local"),
-    dares: Array.isArray(pack.dares) ? pack.dares.map((dare, index) => ({
-      id: dare.id || `${pack.id || "pack"}-dare-${index}`,
+    dares: Array.isArray(pack.dares) ? pack.dares.map((dare, i) => ({
+      id: dare.id || `${pack.id || "pack"}-dare-${i}`,
       text: String(dare.text || "").trim(),
       type: dare.type || inferType(String(dare.text || "")),
       enabled: dare.enabled !== false
-    })).filter((dare) => dare.text) : []
+    })).filter((d) => d.text) : []
   };
 }
 
@@ -673,21 +601,31 @@ function getPackIdentity(pack) {
 }
 
 function countEnabled(pack) {
-  return pack.dares.filter((dare) => dare.enabled).length;
+  return pack.dares.filter((d) => d.enabled).length;
 }
 
+// Fix #4: expanded inferType with broader keyword matching
 function inferType(text) {
   const lower = text.toLowerCase();
-  if (lower.includes("truth") || lower.includes("who") || lower.includes("reveal")) return "truth";
-  if (lower.includes("shot") || lower.includes("sip") || lower.includes("drink")) return "shot";
+  const shotWords = ["shot", "sip", "drink", "chug", "take a ", "bottoms up", "down your"];
+  const truthWords = [
+    "truth", "who ", "what ", "when ", "where ", "why ", "how ",
+    "reveal", "confess", "admit", "tell ", "have you", "would you",
+    "do you", "did you", "your biggest", "your most", "your worst",
+    "your best", "your last", "your least"
+  ];
+  if (shotWords.some((w) => lower.includes(w))) return "shot";
+  if (truthWords.some((w) => lower.includes(w))) return "truth";
   return "dare";
 }
 
+// ─── Utility ──────────────────────────────────────────────────────────────────
+
 function nextGuestPlayerName(players) {
-  let index = 1;
+  let i = 1;
   const names = new Set(players);
-  while (names.has(`Player ${index}`)) index += 1;
-  return `Player ${index}`;
+  while (names.has(`Player ${i}`)) i++;
+  return `Player ${i}`;
 }
 
 function capitalize(value) {
@@ -695,10 +633,10 @@ function capitalize(value) {
 }
 
 function escapeHtml(value) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+  return String(value)
+    .replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;").replaceAll("'", "&#39;");
 }
+
+function showEl(el) { el && el.classList.remove("hidden"); }
+function hideEl(el) { el && el.classList.add("hidden"); }

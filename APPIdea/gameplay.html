@@ -3,32 +3,44 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>After Hours Gameplay</title>
+  <title>After Hours — Game Room</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="gameplay-page">
+
+  <!-- Fix #8: guard banner shown by JS if no game state found -->
+  <div class="guard-banner hidden" id="guard-banner">
+    <span>⚠️ No game setup found — using default packs. <a href="index.html">Go to Setup</a></span>
+  </div>
+
   <main class="gameplay-shell">
     <section class="gameplay-hero">
       <div>
         <p class="eyebrow">Game Room</p>
         <h1>Move through the round one dramatic beat at a time.</h1>
-        <p class="hero-copy">Choose the next player first, then reveal their outcome on a dedicated dare screen. No more cramped everything-at-once layout.</p>
+        <p class="hero-copy">Choose the next player first, then reveal their dare on a full-screen stage.</p>
       </div>
       <div class="gameplay-actions">
-        <a class="secondary-action gameplay-link" href="index.html">Back to Setup</a>
+        <a class="secondary-action gameplay-link" href="index.html">← Back to Setup</a>
+        <!-- Fix #3: round counter -->
+        <div class="round-counter">
+          <span class="round-counter-label">Round</span>
+          <span class="round-counter-value" id="round-count">0</span>
+        </div>
         <div class="gameplay-stage-tag" id="gameplay-stage-tag">Player Picker</div>
       </div>
     </section>
 
+    <!-- PLAYER PICKER STAGE -->
     <section class="gameplay-stage gameplay-stage-active" id="player-stage">
       <div class="gameplay-stage-shell">
         <div class="gameplay-stage-copy gameplay-stage-copy-center">
           <p class="eyebrow">Player Picker</p>
           <h2>Spin the arrow and lock in the next player.</h2>
-          <p class="hero-copy">This screen is only for choosing who goes next. Once the arrow lands, we'll move straight to the dare wheel.</p>
+          <p class="hero-copy">This screen is only for choosing who goes next. Once the arrow lands, we'll move to the dare wheel.</p>
         </div>
         <div class="gameplay-player-stage">
           <div class="pointer-disc gameplay-disc gameplay-disc-large gameplay-disc-polished">
@@ -49,12 +61,13 @@
       </div>
     </section>
 
+    <!-- DARE REVEAL STAGE -->
     <section class="gameplay-stage" id="dare-stage">
       <div class="gameplay-stage-shell gameplay-stage-shell-wide">
         <div class="gameplay-stage-copy">
           <p class="eyebrow">Dare Reveal</p>
           <h2>Spin the wheel to decide what happens next.</h2>
-          <p class="hero-copy">The next player is locked in. Spin the wheel, reveal the prompt, then send the game back to the player picker for the next turn.</p>
+          <p class="hero-copy">The next player is locked in. Spin the wheel, then complete the prompt.</p>
         </div>
 
         <div class="gameplay-focus-banner">
@@ -67,7 +80,14 @@
             <div class="outcome-stage gameplay-wheel-stage">
               <div class="wheel-shell gameplay-wheel-shell">
                 <div class="wheel-pointer"></div>
+                <!-- Fix #2: wheel with visible SVG segment labels -->
                 <div class="wheel" id="dare-wheel">
+                  <svg class="wheel-labels" viewBox="0 0 360 360" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <text transform="rotate(45,180,180) translate(180,80)" text-anchor="middle" fill="rgba(255,255,255,0.92)" font-size="22" font-weight="700" font-family="Space Grotesk,sans-serif">TRUTH</text>
+                    <text transform="rotate(135,180,180) translate(180,80)" text-anchor="middle" fill="rgba(255,255,255,0.92)" font-size="22" font-weight="700" font-family="Space Grotesk,sans-serif">DARE</text>
+                    <text transform="rotate(225,180,180) translate(180,80)" text-anchor="middle" fill="rgba(255,255,255,0.92)" font-size="20" font-weight="700" font-family="Space Grotesk,sans-serif">SHOT</text>
+                    <text transform="rotate(315,180,180) translate(180,80)" text-anchor="middle" fill="rgba(255,255,255,0.92)" font-size="17" font-weight="700" font-family="Space Grotesk,sans-serif">WILD</text>
+                  </svg>
                   <div class="wheel-center">Spin</div>
                 </div>
               </div>
@@ -88,8 +108,10 @@
                 <p class="result-text large" id="selected-dare">Spin the wheel when the next player is ready.</p>
               </div>
             </div>
-            <div class="gameplay-panel-actions">
-              <button class="ghost-action gameplay-hidden" id="next-round-link" type="button">Next Player</button>
+            <div class="gameplay-panel-actions dare-actions">
+              <!-- Fix #7: skip button -->
+              <button class="ghost-action gameplay-hidden" id="skip-dare" type="button">Skip / Pass</button>
+              <button class="ghost-action gameplay-hidden" id="next-round-link" type="button">Next Player →</button>
             </div>
           </section>
         </div>

@@ -17,20 +17,18 @@
         <h1>After Hours</h1>
         <p class="brand-copy">Truths, dares, and chaotic party rounds with community-made packs.</p>
       </div>
-
       <nav class="nav">
         <button class="nav-button active" data-view="home">Home</button>
         <button class="nav-button" data-view="play">Play</button>
         <button class="nav-button" data-view="edit">Edit Dares</button>
         <button class="nav-button" data-view="browse">Browse Packs</button>
       </nav>
-
       <section class="sidebar-card">
         <p class="sidebar-label">Prototype Focus</p>
         <ul class="feature-list">
           <li>Step-by-step play flow with full-screen phases</li>
           <li>Rotation mode and random select mode</li>
-          <li>Custom dare pack editor</li>
+          <li>Custom dare pack editor with type tags</li>
           <li>Community browse and add flow</li>
           <li>Local persistence with browser storage</li>
         </ul>
@@ -38,22 +36,19 @@
     </aside>
 
     <main class="main-content">
+      <!-- HOME -->
       <section class="view active" id="view-home">
         <div class="hero">
           <div>
             <p class="eyebrow">Main Screen</p>
             <h2>Choose your kind of chaos.</h2>
-            <p class="hero-copy">
-              This prototype follows your app structure: jump into gameplay, edit your own dare libraries,
-              or browse public packs to add to your collection.
-            </p>
+            <p class="hero-copy">Jump into gameplay, edit your own dare libraries, or browse public packs to add to your collection.</p>
             <div class="hero-actions">
               <button class="primary-action" data-jump="play">Play</button>
               <button class="secondary-action" data-jump="edit">Edit Dares</button>
               <button class="secondary-action" data-jump="browse">Browse Packs</button>
             </div>
           </div>
-
           <div class="hero-panel">
             <div class="metric-row">
               <div class="metric-card">
@@ -76,6 +71,7 @@
         </div>
       </section>
 
+      <!-- PLAY -->
       <section class="view" id="view-play">
         <div class="section-header">
           <div>
@@ -84,77 +80,68 @@
           </div>
           <button class="ghost-action" id="reset-game">Reset Round</button>
         </div>
-
         <div class="phase-progress">
           <button class="phase-dot active" data-step="setup">1. Setup</button>
           <button class="phase-dot" data-step="players">2. Players</button>
           <button class="phase-dot" data-step="ready">3. Ready Room</button>
         </div>
-
         <div class="play-flow">
+          <!-- SETUP -->
           <section class="play-screen active" data-step-screen="setup">
             <div class="play-screen-inner">
               <div class="play-copy">
                 <p class="eyebrow">Phase 1</p>
                 <h3>Pick the categories for this round.</h3>
-                <p class="section-copy">
-                  Combine lite, extreme, NSFW, or drinking packs before the game starts.
-                </p>
+                <p class="section-copy">Combine lite, extreme, NSFW, or drinking packs before the game starts.</p>
               </div>
               <div class="play-screen-card">
                 <div id="play-category-list" class="category-list"></div>
               </div>
             </div>
             <div class="play-nav">
-              <span class="play-hint">Select at least one category to continue.</span>
-              <button class="primary-action" id="go-to-players">Next: Players</button>
+              <span class="play-hint" id="setup-hint">Select at least one category to continue.</span>
+              <button class="primary-action" id="go-to-players">Next: Players →</button>
             </div>
           </section>
 
+          <!-- PLAYERS -->
           <section class="play-screen" data-step-screen="players">
             <div class="play-screen-inner dual">
               <div class="play-copy">
                 <p class="eyebrow">Phase 2</p>
                 <h3>Choose how the app selects the next player.</h3>
-                <p class="section-copy">
-                  Rotation keeps a clean order. Random mode picks anyone each spin.
-                </p>
-
+                <p class="section-copy">Rotation keeps a clean order. Random mode picks anyone each spin.</p>
                 <div class="mode-toggle">
                   <button class="mode-button active" data-mode="rotation">Rotation</button>
                   <button class="mode-button" data-mode="random">Random Select</button>
                 </div>
-
-                <div class="mode-info" id="mode-info">
-                  Rotation mode will move through your players in order.
-                </div>
+                <div class="mode-info" id="mode-info">Rotation mode will move through your players in order.</div>
               </div>
-
               <div class="play-screen-card">
                 <h3>Add Players</h3>
                 <div class="player-form">
                   <input id="player-name" type="text" placeholder="Add player name" maxlength="20" />
                   <button class="primary-action small" id="add-player">Add</button>
                 </div>
+                <!-- Fix #5: validation message -->
+                <p class="field-error hidden" id="players-error">Add at least one player to use rotation mode.</p>
                 <div id="player-list" class="player-list"></div>
               </div>
             </div>
             <div class="play-nav">
-              <button class="ghost-action" data-back-step="setup">Back</button>
-              <button class="primary-action" id="go-to-chooser">Next: Ready Room</button>
+              <button class="ghost-action" data-back-step="setup">← Back</button>
+              <button class="primary-action" id="go-to-chooser">Next: Ready Room →</button>
             </div>
           </section>
 
+          <!-- READY ROOM -->
           <section class="play-screen" data-step-screen="ready">
             <div class="play-screen-inner">
               <div class="play-copy">
                 <p class="eyebrow">Phase 3</p>
                 <h3>Everything is set. Give the room a final check.</h3>
-                <p class="section-copy">
-                  This page connects setup to gameplay so you can review the lobby once before the first round starts.
-                </p>
+                <p class="section-copy">Review your lobby once before the first round starts.</p>
               </div>
-
               <div class="ready-grid">
                 <div class="ready-card">
                   <p class="sidebar-label">Selected Packs</p>
@@ -184,13 +171,14 @@
               </div>
             </div>
             <div class="play-nav">
-              <button class="ghost-action" data-back-step="players">Back</button>
-              <button class="primary-action" id="start-game-room">Open Gameplay Page</button>
+              <button class="ghost-action" data-back-step="players">← Back</button>
+              <button class="primary-action" id="start-game-room">Open Gameplay Page →</button>
             </div>
           </section>
         </div>
       </section>
 
+      <!-- EDIT DARES -->
       <section class="view" id="view-edit">
         <div class="section-header">
           <div>
@@ -198,12 +186,15 @@
             <h2>Build your own packs and toggle individual dares on or off.</h2>
           </div>
         </div>
-
         <div class="editor-grid">
           <div class="card">
             <h3>Create a Pack</h3>
             <div class="stack">
-              <input id="new-pack-title" type="text" placeholder="Pack title" maxlength="40" />
+              <!-- Fix #5: validation messages -->
+              <div class="field-group">
+                <input id="new-pack-title" type="text" placeholder="Pack title" maxlength="40" />
+                <p class="field-error hidden" id="error-title">Pack title is required.</p>
+              </div>
               <input id="new-pack-author" type="text" placeholder="Your name or alias" maxlength="24" />
               <select id="new-pack-intensity">
                 <option value="Lite">Lite</option>
@@ -215,11 +206,15 @@
                 <input id="new-pack-public" type="checkbox" checked />
                 <span>Publish to browse screen</span>
               </label>
-              <textarea id="new-pack-dares" rows="7" placeholder="Add one dare or truth per line"></textarea>
+              <!-- Fix #4: type tag prefix hint -->
+              <div>
+                <textarea id="new-pack-dares" rows="7" placeholder="One dare per line. Prefix with [truth], [dare], or [shot] to set type — or leave blank to auto-detect."></textarea>
+                <p class="field-hint">Example: <code>[truth] What's your most embarrassing story?</code></p>
+                <p class="field-error hidden" id="error-dares">Add at least one dare or truth.</p>
+              </div>
               <button class="primary-action" id="create-pack">Create Pack</button>
             </div>
           </div>
-
           <div class="card">
             <h3>My Library</h3>
             <p class="section-copy">Disable individual prompts without deleting the whole category.</p>
@@ -228,6 +223,7 @@
         </div>
       </section>
 
+      <!-- BROWSE -->
       <section class="view" id="view-browse">
         <div class="section-header">
           <div>
@@ -235,7 +231,6 @@
             <h2>Search packs and add them into your local library.</h2>
           </div>
         </div>
-
         <div class="browse-toolbar card">
           <input id="browse-search" type="search" placeholder="Search public packs" />
           <select id="browse-filter">
@@ -246,7 +241,6 @@
             <option value="Drinking">Drinking</option>
           </select>
         </div>
-
         <div id="browse-list" class="browse-list"></div>
       </section>
     </main>

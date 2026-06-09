@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>After Hours Prototype</title>
+  <title>After Hours — Party Game</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
@@ -13,7 +13,6 @@
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
-        <p class="eyebrow">Party App Prototype</p>
         <h1>After Hours</h1>
         <p class="brand-copy">Truths, dares, and chaotic party rounds with community-made packs.</p>
       </div>
@@ -23,16 +22,6 @@
         <button class="nav-button" data-view="edit">Edit Dares</button>
         <button class="nav-button" data-view="browse">Browse Packs</button>
       </nav>
-      <section class="sidebar-card">
-        <p class="sidebar-label">Prototype Focus</p>
-        <ul class="feature-list">
-          <li>Step-by-step play flow with full-screen phases</li>
-          <li>Rotation mode and random select mode</li>
-          <li>Custom dare pack editor with type tags</li>
-          <li>Community browse and add flow</li>
-          <li>Local persistence with browser storage</li>
-        </ul>
-      </section>
     </aside>
 
     <main class="main-content">
@@ -40,7 +29,7 @@
       <section class="view active" id="view-home">
         <div class="hero">
           <div>
-            <p class="eyebrow">Main Screen</p>
+            <p class="eyebrow">Let's get the party started</p>
             <h2>Choose your kind of chaos.</h2>
             <p class="hero-copy">Jump into gameplay, edit your own dare libraries, or browse public packs to add to your collection.</p>
             <div class="hero-actions">
@@ -75,7 +64,7 @@
       <section class="view" id="view-play">
         <div class="section-header">
           <div>
-            <p class="eyebrow">Gameplay Engine</p>
+            <p class="eyebrow">Game Setup</p>
             <h2>Move through the round one phase at a time.</h2>
           </div>
           <button class="ghost-action" id="reset-game">Reset Round</button>
@@ -90,7 +79,7 @@
           <section class="play-screen active" data-step-screen="setup">
             <div class="play-screen-inner">
               <div class="play-copy">
-                <p class="eyebrow">Phase 1</p>
+                <p class="eyebrow">Step 1 of 3</p>
                 <h3>Pick the categories for this round.</h3>
                 <p class="section-copy">Combine lite, extreme, NSFW, or drinking packs before the game starts.</p>
               </div>
@@ -108,7 +97,7 @@
           <section class="play-screen" data-step-screen="players">
             <div class="play-screen-inner dual">
               <div class="play-copy">
-                <p class="eyebrow">Phase 2</p>
+                <p class="eyebrow">Step 2 of 3</p>
                 <h3>Choose how the app selects the next player.</h3>
                 <p class="section-copy">Rotation keeps a clean order. Random mode picks anyone each spin.</p>
                 <div class="mode-toggle">
@@ -138,7 +127,7 @@
           <section class="play-screen" data-step-screen="ready">
             <div class="play-screen-inner">
               <div class="play-copy">
-                <p class="eyebrow">Phase 3</p>
+                <p class="eyebrow">Step 3 of 3</p>
                 <h3>Everything is set. Give the room a final check.</h3>
                 <p class="section-copy">Review your lobby once before the first round starts.</p>
               </div>
@@ -182,7 +171,7 @@
       <section class="view" id="view-edit">
         <div class="section-header">
           <div>
-            <p class="eyebrow">Category Creator</p>
+            <p class="eyebrow">Pack Editor</p>
             <h2>Build your own packs and toggle individual dares on or off.</h2>
           </div>
         </div>

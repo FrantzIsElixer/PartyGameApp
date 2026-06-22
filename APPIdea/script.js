@@ -414,6 +414,7 @@ function renderLibrary() {
         </label>
       </div>
     `).join("");
+    const isUserPack = !pack.id.startsWith("pub-") && !pack.id.startsWith("my-");
     wrapper.innerHTML = `
       <div class="pack-top">
         <div>
@@ -422,7 +423,7 @@ function renderLibrary() {
         </div>
         <div class="tag-row">
           <span class="tag">${countEnabled(pack)} enabled</span>
-          <button class="mini-action" data-publish="${pack.id}">${pack.isPublic ? "Unpublish" : "Publish"}</button>
+          ${isUserPack ? `<button class="mini-action" data-publish="${pack.id}">${pack.isPublic ? "Unpublish" : "Publish"}</button>` : `<span class="tag">Starter Pack</span>`}
         </div>
       </div>
       <div class="pack-dares">${dareLines}</div>
@@ -430,7 +431,9 @@ function renderLibrary() {
     wrapper.querySelectorAll('input[type="checkbox"][data-pack]').forEach((toggle) => {
       toggle.addEventListener("change", (e) => toggleDare(e.target.dataset.pack, e.target.dataset.dare));
     });
-    wrapper.querySelector("[data-publish]").addEventListener("click", (e) => togglePublish(e.currentTarget.dataset.publish));
+    if (isUserPack) {
+      wrapper.querySelector("[data-publish]").addEventListener("click", (e) => togglePublish(e.currentTarget.dataset.publish));
+    }
     els.libraryList.appendChild(wrapper);
   });
 }

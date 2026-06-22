@@ -8,6 +8,96 @@
 const STORAGE_KEY = "after-hours-prototype-state";
 const PLAY_STEPS = ["setup", "players", "ready"];
 
+// ─── Supabase DB helpers ──────────────────────────────────────────────────────
+
+// Save a single pack (and its prompts) to Supabase. No-ops if not logged in.
+async function savePackToDB(pack) {
+  const sb = window._supabase;
+  const user = getCurrentUser();
+  if (!sb || !user) return;
+
+  const { error: packErr } = await sb.from("packs").upsert({
+    id: pack.id,
+    category_name: pack.categoryName,
+    author: pack.author,
+    intensity: pack.intensity,
+    is_public: pack.isPublic,
+    source: pack.source,
+    user_id: user.id
+  });
+  if (packErr) { console.error("savePackToDB packs:", packErr); return; }
+
+  // Delete old prompts then re-insert (simplest sync strategy)
+  await sb.from("prompts").delete().eq("pack_id", pack.id);
+  if (pack.dares.length) {
+    const rows = pack.dares.map((d, i) => ({
+      id: d.id, pack_id: pack.id, text: d.text,
+      type: d.type, enabled: d.enabled, sort_order: i
+    }));
+    const { error: promptErr } = await sb.from("prompts").insert(rows);
+    if (promptErr) console.error("savePackToDB prompts:", promptErr);
+  }
+}
+
+// Delete a pack from Supabase. No-ops if not logged in.
+async function deletePackFromDB(packId) {
+  const sb = window._supabase;
+  const user = getCurrentUser();
+  if (!sb || !user) return;
+  await sb.from("packs").delete().eq("id", packId).eq("user_id", user.id);
+}
+
+// Load user's own packs + all public packs from Supabase into state.
+async function loadPacksFromDB() {
+  const sb = window._supabase;
+  const user = getCurrentUser();
+  if (!sb || !user) return;
+
+  // Fetch user's own packs
+  const { data: myPackRows, error: e1 } = await sb
+    .from("packs").select("*").eq("user_id", user.id);
+  // Fetch all public packs
+  const { data: publicPackRows, error: e2 } = await sb
+    .from("packs").select("*").eq("is_public", true);
+  if (e1 || e2) { console.error("loadPacksFromDB:", e1, e2); return; }
+
+  // Fetch all prompts for those packs
+  const allPackIds = [...new Set([
+    ...(myPackRows || []).map(p => p.id),
+    ...(publicPackRows || []).map(p => p.id)
+  ])];
+  if (!allPackIds.length) return;
+
+  const { data: promptRows, error: e3 } = await sb
+    .from("prompts").select("*").in("pack_id", allPackIds).order("sort_order");
+  if (e3) { console.error("loadPacksFromDB prompts:", e3); return; }
+
+  function buildPack(row) {
+    return {
+      id: row.id,
+      categoryName: row.category_name,
+      author: row.author,
+      intensity: row.intensity,
+      isPublic: row.is_public,
+      source: row.source,
+      dares: (promptRows || [])
+        .filter(p => p.pack_id === row.id)
+        .map(p => ({ id: p.id, text: p.text, type: p.type, enabled: p.enabled }))
+    };
+  }
+
+  const myPacks = (myPackRows || []).map(buildPack);
+  const publicPacks = (publicPackRows || []).map(buildPack);
+
+  // Merge into state — DB wins over local for same IDs
+  const localOnlyPacks = state.libraryPacks.filter(
+    lp => !myPacks.some(mp => mp.id === lp.id)
+  );
+  state.libraryPacks = [...myPacks, ...localOnlyPacks];
+  state.publicPacks = publicPacks;
+  saveState();
+}
+
 // ─── Seed data ────────────────────────────────────────────────────────────────
 
 const seedPublicPacks = [
@@ -112,9 +202,15 @@ init();
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 
-function init() {
+async function init() {
+  await initAuth();
   bindEvents();
   render();
+  // Load packs from DB (if user already logged in from a previous session)
+  if (getCurrentUser()) {
+    await loadPacksFromDB();
+    render();
+  }
 }
 
 function bindEvents() {
@@ -426,6 +522,7 @@ function togglePublish(packId) {
     state.publicPacks.splice(existingIdx, 1);
   }
   saveState();
+  savePackToDB(pack); // sync publish status to DB
   renderMetrics();
   renderLibrary();
   renderBrowse();
@@ -447,10 +544,10 @@ function addPackToLibrary(packId) {
   renderReadyRoom();
 }
 
-// Fix #5: validation on pack creation
+// Fix #5: validation on pack creation + Supabase sync
 function createPack() {
   const title = els.newPackTitle.value.trim();
-  const author = els.newPackAuthor.value.trim() || "Anonymous";
+  const author = els.newPackAuthor.value.trim() || getCurrentUser()?.email?.split("@")[0] || "Anonymous";
   const intensity = els.newPackIntensity.value;
   const isPublic = els.newPackPublic.checked;
   const rawLines = els.newPackDares.value.split("\n").map((l) => l.trim()).filter(Boolean);
@@ -459,6 +556,12 @@ function createPack() {
   if (!title) { showEl(els.errorTitle); valid = false; } else hideEl(els.errorTitle);
   if (!rawLines.length) { showEl(els.errorDares); valid = false; } else hideEl(els.errorDares);
   if (!valid) return;
+
+  // Prompt to sign in if not logged in (so the pack is saved to DB)
+  if (!getCurrentUser()) {
+    const proceed = confirm("You're not signed in — your pack will only be saved locally and others won't see it. Sign in to publish to the community?\n\nPress OK to sign in, Cancel to save locally.");
+    if (proceed) { showAuthModal(); return; }
+  }
 
   const stamp = Date.now();
   // Fix #4: parse [truth]/[dare]/[shot] prefix tags
@@ -480,6 +583,7 @@ function createPack() {
   els.newPackIntensity.value = "Lite";
 
   saveState();
+  savePackToDB(pack); // sync new pack to DB
   render();
 }
 

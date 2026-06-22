@@ -97,3 +97,28 @@ create policy "Users can delete their prompts"
         and packs.user_id = auth.uid()
     )
   );
+
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- REPORTS TABLE (run this in Supabase SQL Editor too)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+create table if not exists reports (
+  id          uuid primary key default gen_random_uuid(),
+  pack_id     text not null references packs(id) on delete cascade,
+  reason      text not null,
+  reported_by uuid references auth.users(id) on delete set null,
+  created_at  timestamptz not null default now()
+);
+
+alter table reports enable row level security;
+
+-- Anyone (even logged out) can submit a report
+create policy "Anyone can report a pack"
+  on reports for insert
+  with check (true);
+
+-- Only the reporter can see their own reports
+create policy "Users see their own reports"
+  on reports for select
+  using (auth.uid() = reported_by);

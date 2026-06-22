@@ -751,19 +751,150 @@ textarea { resize: vertical; }
   .gameplay-hero { align-items: start; flex-direction: column; }
 }
 
-@media (max-width: 640px) {
-  .brand h1 { font-size: 3rem; }
-
-  .player-form, .browse-toolbar, .section-header,
-  .pack-top, .browse-top, .play-nav, .mode-toggle {
-    flex-direction: column;
-    align-items: stretch;
+@media (max-width: 768px) {
+  /* ── Sidebar becomes a top bar on mobile ── */
+  .app-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
   }
 
-  .play-screen { min-height: calc(100vh - 180px); padding: 20px; }
+  .sidebar {
+    padding: 16px 18px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10, 11, 18, 0.95);
+    backdrop-filter: blur(24px);
+  }
 
-  .gameplay-arrow { width: min(42vw, 170px); height: 32px; }
-  .gameplay-arrow-shaft { height: 14px; }
-  .gameplay-arrow-head { border-top-width: 16px; border-bottom-width: 16px; border-left-width: 24px; }
-  .gameplay-shell { padding: 24px 18px 40px; }
+  .brand { display: none; } /* hide big logo on mobile */
+
+  .nav {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    margin: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+
+  .nav-button {
+    padding: 10px 14px;
+    white-space: nowrap;
+    font-size: 0.88rem;
+    border-radius: 12px;
+    flex-shrink: 0;
+  }
+
+  .auth-area {
+    display: none; /* move auth to main content on mobile — too cramped in nav bar */
+  }
+
+  .main-content { padding: 16px; }
+
+  /* ── Hero ── */
+  .hero {
+    grid-template-columns: 1fr;
+    min-height: unset;
+    gap: 20px;
+    padding-top: 8px;
+  }
+  .hero h2 { font-size: clamp(2.4rem, 9vw, 4rem); }
+  .hero-panel { padding: 18px; }
+  .metric-row { grid-template-columns: repeat(2, 1fr); }
+
+  /* ── Play flow ── */
+  .phase-progress { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .phase-dot { padding: 10px 8px; font-size: 0.8rem; }
+  .play-screen { padding: 18px; min-height: unset; }
+  .play-screen-inner.dual { grid-template-columns: 1fr; }
+  .play-copy h3 { font-size: clamp(1.8rem, 6vw, 3rem); }
+  .play-nav { flex-direction: column; gap: 10px; }
+  .play-nav button, .play-nav a { width: 100%; text-align: center; }
+
+  /* ── Ready room ── */
+  .ready-grid { grid-template-columns: 1fr; }
+
+  /* ── Editor ── */
+  .editor-grid { grid-template-columns: 1fr; }
+  .pack-top { flex-wrap: wrap; }
+  .browse-top { flex-wrap: wrap; }
+  .dare-line { flex-wrap: wrap; }
+
+  /* ── Browse / search ── */
+  .browse-toolbar { flex-direction: column; gap: 10px; }
+  .section-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+
+  /* ── Mode toggle ── */
+  .mode-toggle { flex-direction: column; }
+  .player-form { flex-direction: column; }
+  .player-form input { width: 100%; }
+
+  /* ── Cards ── */
+  .card, .sidebar-card { padding: 16px; }
+
+  /* ── Buttons ── */
+  .primary-action, .secondary-action, .ghost-action { padding: 12px 16px; }
+  .hero-actions { gap: 10px; }
+  .hero-actions button, .hero-actions a { width: 100%; text-align: center; }
+}
+
+/* ── Gameplay page mobile ── */
+@media (max-width: 768px) {
+  .gameplay-shell { padding: 16px 14px 40px; }
+
+  .gameplay-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .gameplay-hero h1 { font-size: clamp(1.8rem, 7vw, 3rem); }
+  .gameplay-actions { flex-wrap: wrap; gap: 8px; width: 100%; }
+  .gameplay-actions .secondary-action { flex: 1; text-align: center; }
+
+  /* Stack dare layout vertically */
+  .gameplay-dare-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Shrink wheel on small screens */
+  .wheel { width: min(72vw, 280px); }
+  .wheel-center { width: 64px; height: 64px; font-size: 0.8rem; }
+  .wheel-pointer { border-left-width: 12px; border-right-width: 12px; border-top-width: 22px; }
+
+  /* Shrink player picker disc */
+  .pointer-disc { width: min(78vw, 300px); }
+  .player-marker { font-size: 0.75rem; padding: 6px 10px; max-width: 90px; }
+
+  /* Arrow */
+  .gameplay-arrow { width: min(36vw, 140px); height: 28px; }
+  .gameplay-arrow-shaft { height: 12px; }
+  .gameplay-arrow-head { border-top-width: 14px; border-bottom-width: 14px; border-left-width: 20px; }
+
+  /* Result text */
+  .result-text.large { font-size: 1.15rem; }
+  .gameplay-stage-copy h2 { font-size: clamp(1.5rem, 5vw, 2.2rem); }
+  .gameplay-focus-value { font-size: clamp(1.2rem, 5vw, 2rem); }
+
+  .gameplay-panel { padding: 18px; }
+  .gameplay-panel-actions { flex-wrap: wrap; gap: 10px; }
+  .gameplay-panel-actions button { flex: 1; min-width: 120px; }
+
+  /* Keep dare actions spaced on mobile */
+  .dare-actions { justify-content: space-between; }
+  .dare-actions button { flex: unset; }
+}
+
+@media (max-width: 400px) {
+  .nav-button { padding: 9px 11px; font-size: 0.82rem; }
+  .wheel { width: min(80vw, 240px); }
+  .pointer-disc { width: min(84vw, 260px); }
 }

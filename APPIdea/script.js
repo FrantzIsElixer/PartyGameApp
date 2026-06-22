@@ -456,24 +456,27 @@ function renderBrowse() {
   }
   packs.forEach((pack) => {
     const addedAlready = state.libraryPacks.some((lp) => lp.id === pack.id || lp.categoryName === pack.categoryName);
+    const isSeedPack = pack.id.startsWith("pub-");
     const card = document.createElement("article");
     card.className = "browse-card";
     card.innerHTML = `
       <div class="browse-top">
         <div>
           <h3>${escapeHtml(pack.categoryName)}</h3>
-          <p>by ${escapeHtml(pack.author)}</p>
+          <p>by ${escapeHtml(pack.author)}${isSeedPack ? " · <span class=\"seed-badge\">Starter Pack</span>" : ""}</p>
         </div>
         <button class="primary-action small" data-add="${pack.id}" ${addedAlready ? "disabled" : ""}>${addedAlready ? "Added" : "Add to Library"}</button>
       </div>
       <div class="tag-row">
         <span class="tag">${pack.intensity}</span>
         <span class="tag">${pack.dares.length} prompts</span>
-        <span class="tag">${pack.isPublic ? "Public" : "Private"}</span>
       </div>
       <p>${pack.dares.slice(0, 2).map((d) => escapeHtml(d.text)).join(" · ")}</p>
+      ${isSeedPack ? "" : `<button class="report-btn" data-report="${pack.id}" data-name="${escapeHtml(pack.categoryName)}">⚑ Report</button>`}
     `;
     card.querySelector("[data-add]").addEventListener("click", (e) => addPackToLibrary(e.currentTarget.dataset.add));
+    const reportBtn = card.querySelector("[data-report]");
+    if (reportBtn) reportBtn.addEventListener("click", (e) => showReportModal(e.currentTarget.dataset.report, e.currentTarget.dataset.name));
     els.browseList.appendChild(card);
   });
 }
@@ -754,3 +757,112 @@ function escapeHtml(value) {
 
 function showEl(el) { el && el.classList.remove("hidden"); }
 function hideEl(el) { el && el.classList.add("hidden"); }
+
+// ─── Report Pack ──────────────────────────────────────────────────────────────
+
+function showReportModal(packId, packName) {
+  let modal = document.getElementById("report-modal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "report-modal";
+    modal.innerHTML = `
+      <div class="report-backdrop"></div>
+      <div class="report-card">
+        <button class="report-close" id="report-close">✕</button>
+        <h2>Report Pack</h2>
+        <p id="report-pack-name" class="report-pack-label"></p>
+        <p class="report-sub">Why are you reporting this pack?</p>
+        <div class="report-reasons">
+          <label><input type="radio" name="report-reason" value="Inappropriate content" /> Inappropriate content</label>
+          <label><input type="radio" name="report-reason" value="Spam or fake pack" /> Spam or fake pack</label>
+          <label><input type="radio" name="report-reason" value="Offensive or harmful" /> Offensive or harmful</label>
+          <label><input type="radio" name="report-reason" value="Other" /> Other</label>
+        </div>
+        <p id="report-error" class="report-error hidden">Please select a reason.</p>
+        <p id="report-success" class="report-success hidden">Thanks — we'll review this pack.</p>
+        <button id="report-submit" class="report-submit-btn">Submit Report</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    document.getElementById("report-close").onclick = hideReportModal;
+    modal.querySelector(".report-backdrop").addEventListener("click", hideReportModal);
+    injectReportStyles();
+  }
+
+  // Reset state
+  modal.querySelectorAll("input[name='report-reason']").forEach(r => r.checked = false);
+  document.getElementById("report-error").classList.add("hidden");
+  document.getElementById("report-success").classList.add("hidden");
+  document.getElementById("report-submit").disabled = false;
+  document.getElementById("report-pack-name").textContent = `"${packName}"`;
+  modal.dataset.packId = packId;
+  modal.classList.remove("hidden");
+
+  document.getElementById("report-submit").onclick = async () => {
+    const reason = modal.querySelector("input[name='report-reason']:checked")?.value;
+    const errEl = document.getElementById("report-error");
+    const successEl = document.getElementById("report-success");
+    if (!reason) { errEl.classList.remove("hidden"); return; }
+    errEl.classList.add("hidden");
+
+    const sb = window._supabase;
+    const user = getCurrentUser();
+    const { error } = await sb.from("reports").insert({
+      pack_id: modal.dataset.packId,
+      reason,
+      reported_by: user?.id || null
+    });
+
+    if (error) {
+      errEl.textContent = "Something went wrong. Try again.";
+      errEl.classList.remove("hidden");
+    } else {
+      successEl.classList.remove("hidden");
+      document.getElementById("report-submit").disabled = true;
+      setTimeout(hideReportModal, 2000);
+    }
+  };
+}
+
+function hideReportModal() {
+  const modal = document.getElementById("report-modal");
+  if (modal) modal.classList.add("hidden");
+}
+
+function injectReportStyles() {
+  if (document.getElementById("report-styles")) return;
+  const style = document.createElement("style");
+  style.id = "report-styles";
+  style.textContent = `
+    #report-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+    #report-modal.hidden { display: none; }
+    .report-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.7); }
+    .report-card {
+      position: relative; z-index: 1;
+      background: #1a1a2e;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      padding: 2rem;
+      width: min(400px, 90vw);
+      display: flex; flex-direction: column; gap: 0.75rem;
+    }
+    .report-card h2 { margin: 0; font-size: 1.3rem; }
+    .report-pack-label { margin: 0; font-weight: 700; color: var(--accent); font-size: 0.95rem; }
+    .report-sub { margin: 0; opacity: 0.6; font-size: 0.85rem; }
+    .report-reasons { display: flex; flex-direction: column; gap: 0.6rem; }
+    .report-reasons label { display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-size: 0.95rem; padding: 0.5rem 0.75rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); transition: background 0.15s; }
+    .report-reasons label:hover { background: rgba(255,255,255,0.09); }
+    .report-reasons input[type="radio"] { accent-color: var(--accent); width: 16px; height: 16px; }
+    .report-submit-btn { background: var(--accent-2, #ff4d6d); border: none; border-radius: 8px; color: #fff; padding: 0.7rem; font-size: 0.95rem; font-weight: 700; cursor: pointer; margin-top: 0.25rem; }
+    .report-submit-btn:hover { opacity: 0.88; }
+    .report-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .report-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: inherit; font-size: 1.1rem; cursor: pointer; opacity: 0.5; }
+    .report-close:hover { opacity: 1; }
+    .report-error { color: #ff6b6b; font-size: 0.84rem; margin: 0; }
+    .report-success { color: #6ee7d8; font-size: 0.84rem; margin: 0; }
+    .seed-badge { font-size: 0.78rem; background: rgba(110,231,216,0.15); color: var(--accent-3); border-radius: 6px; padding: 2px 7px; }
+    .report-btn { background: none; border: none; color: var(--muted); font-size: 0.8rem; cursor: pointer; padding: 4px 0; text-align: left; opacity: 0.6; transition: opacity 0.15s; }
+    .report-btn:hover { opacity: 1; color: var(--accent-2); }
+  `;
+  document.head.appendChild(style);
+}

@@ -178,27 +178,53 @@ function spinDare() {
   if (dareSpinBusy) return;
   if (!state.selectedPlayer) { spinPlayer(); return; }
 
+  // Segments are drawn at 45, 135, 225, 315 degrees on the SVG (diagonal quarters).
+  // The pointer sits at the TOP of the wheel (12 o'clock = 0deg in CSS rotation space).
+  // Segment centers in the SVG's own coordinate system:
+  //   TRUTH  = 45deg,  DARE = 135deg, SHOT = 225deg, WILD = 315deg
+  // To bring a segment to the top (0deg), we rotate the wheel by: -segmentCenter
+  // i.e. rotate(-45) brings TRUTH to top, rotate(-135) brings DARE, etc.
   const options = ["Truth", "Dare", "Take a Shot", "Wildcard Dare"];
+  const segmentCenters = [45, 135, 225, 315]; // matches SVG rotate() values
+
+  // Pick a random segment
   const selectedIndex = Math.floor(Math.random() * options.length);
-  const targetAngle = 360 - selectedIndex * 90 - 45;
-  const spinAngle = wheelRotation + 1800 + targetAngle;
-  const selectedLabel = options[selectedIndex];
-  const dare = getPromptForOutcome(selectedLabel);
+
+  // How much to rotate wheel so chosen segment faces top (0deg pointer)?
+  // targetDeg = 360 - segmentCenter  (rotate forward to bring it to top)
+  const targetDeg = (360 - segmentCenters[selectedIndex]) % 360;
+  const currentNormalized = ((wheelRotation % 360) + 360) % 360;
+  let delta = (targetDeg - currentNormalized + 360) % 360;
+  if (delta < 30) delta += 360; // ensure meaningful spin
+  const spinAngle = wheelRotation + 1800 + delta;
 
   dareSpinBusy = true;
   els.spinDare.disabled = true;
-  // Fix #9: haptic feedback on mobile
   if (navigator.vibrate) navigator.vibrate(80);
   els.dareWheel.style.transform = `rotate(${spinAngle}deg)`;
 
   window.clearTimeout(dareSpinTimeout);
   dareSpinTimeout = window.setTimeout(() => {
     wheelRotation = spinAngle;
+
+    // Verify which segment actually landed at top by back-calculating.
+    // finalNorm is where the wheel rests. The segment at top satisfies:
+    //   (segmentCenter + finalNorm) % 360 ≈ 0  (or 360)
+    const finalNorm = ((spinAngle % 360) + 360) % 360;
+    const landedIndex = segmentCenters.reduce((bestIdx, center, i) => {
+      const landed = (center + finalNorm) % 360;
+      const dist = Math.min(landed, 360 - landed); // distance from 0/360
+      const bestLanded = (segmentCenters[bestIdx] + finalNorm) % 360;
+      const bestDist = Math.min(bestLanded, 360 - bestLanded);
+      return dist < bestDist ? i : bestIdx;
+    }, selectedIndex);
+
+    const selectedLabel = options[landedIndex];
+    const dare = getPromptForOutcome(selectedLabel);
+
     state.selectedOutcome = selectedLabel;
     state.selectedDare = dare;
-    // Fix #3: increment round counter after dare is revealed
     state.roundCount = (state.roundCount || 0) + 1;
-    // Fix #3: track per-player turn counts
     if (state.selectedPlayer && state.selectedPlayer !== "Closest Player") {
       state.playerTurnCounts = state.playerTurnCounts || {};
       state.playerTurnCounts[state.selectedPlayer] = (state.playerTurnCounts[state.selectedPlayer] || 0) + 1;

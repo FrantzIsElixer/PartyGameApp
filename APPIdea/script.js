@@ -50,27 +50,36 @@ async function deletePackFromDB(packId) {
 // Load user's own packs + all public packs from Supabase into state.
 async function loadPacksFromDB() {
   const sb = window._supabase;
+  if (!sb) return;
   const user = getCurrentUser();
-  if (!sb || !user) return;
 
-  // Fetch user's own packs
-  const { data: myPackRows, error: e1 } = await sb
-    .from("packs").select("*").eq("user_id", user.id);
-  // Fetch all public packs
+  // Always fetch public packs (works for logged-out users too)
   const { data: publicPackRows, error: e2 } = await sb
     .from("packs").select("*").eq("is_public", true);
-  if (e1 || e2) { console.error("loadPacksFromDB:", e1, e2); return; }
+  if (e2) { console.error("loadPacksFromDB public packs:", e2); return; }
+
+  // Fetch user's own packs only if logged in
+  let myPackRows = [];
+  if (user) {
+    const { data, error: e1 } = await sb
+      .from("packs").select("*").eq("user_id", user.id);
+    if (e1) { console.error("loadPacksFromDB user packs:", e1); return; }
+    myPackRows = data || [];
+  }
 
   // Fetch all prompts for those packs
   const allPackIds = [...new Set([
-    ...(myPackRows || []).map(p => p.id),
+    ...myPackRows.map(p => p.id),
     ...(publicPackRows || []).map(p => p.id)
   ])];
-  if (!allPackIds.length) return;
 
-  const { data: promptRows, error: e3 } = await sb
-    .from("prompts").select("*").in("pack_id", allPackIds).order("sort_order");
-  if (e3) { console.error("loadPacksFromDB prompts:", e3); return; }
+  let promptRows = [];
+  if (allPackIds.length) {
+    const { data, error: e3 } = await sb
+      .from("prompts").select("*").in("pack_id", allPackIds).order("sort_order");
+    if (e3) { console.error("loadPacksFromDB prompts:", e3); return; }
+    promptRows = data || [];
+  }
 
   function buildPack(row) {
     return {
@@ -80,20 +89,20 @@ async function loadPacksFromDB() {
       intensity: row.intensity,
       isPublic: row.is_public,
       source: row.source,
-      dares: (promptRows || [])
+      dares: promptRows
         .filter(p => p.pack_id === row.id)
         .map(p => ({ id: p.id, text: p.text, type: p.type, enabled: p.enabled }))
     };
   }
 
-  const myPacks = (myPackRows || []).map(buildPack);
+  const myPacks = myPackRows.map(buildPack);
   const publicPacks = (publicPackRows || []).map(buildPack);
 
   // Merge into state — DB wins over local for same IDs
   const localOnlyPacks = state.libraryPacks.filter(
     lp => !myPacks.some(mp => mp.id === lp.id)
   );
-  state.libraryPacks = [...myPacks, ...localOnlyPacks];
+  state.libraryPacks = user ? [...myPacks, ...localOnlyPacks] : state.libraryPacks;
   state.publicPacks = publicPacks;
   saveState();
 }
@@ -206,11 +215,9 @@ async function init() {
   await initAuth();
   bindEvents();
   render();
-  // Load packs from DB (if user already logged in from a previous session)
-  if (getCurrentUser()) {
-    await loadPacksFromDB();
-    render();
-  }
+  // Always load public packs from DB; also load user packs if logged in
+  await loadPacksFromDB();
+  render();
 }
 
 function bindEvents() {

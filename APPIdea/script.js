@@ -191,7 +191,10 @@ const els = {
   newPackAuthor: document.getElementById("new-pack-author"),
   newPackIntensity: document.getElementById("new-pack-intensity"),
   newPackPublic: document.getElementById("new-pack-public"),
-  newPackDares: document.getElementById("new-pack-dares"),
+  newPackDare: document.getElementById("new-pack-dare"),
+  newPackTruth: document.getElementById("new-pack-truth"),
+  newPackShot: document.getElementById("new-pack-shot"),
+  newPackWildcard: document.getElementById("new-pack-wildcard"),
   createPack: document.getElementById("create-pack"),
   errorTitle: document.getElementById("error-title"),
   errorDares: document.getElementById("error-dares"),
@@ -257,7 +260,19 @@ function bindEvents() {
   // Fix #5: validate pack creation form
   els.createPack.addEventListener("click", createPack);
   els.newPackTitle.addEventListener("input", () => hideEl(els.errorTitle));
-  els.newPackDares.addEventListener("input", () => hideEl(els.errorDares));
+  [els.newPackDare, els.newPackTruth, els.newPackShot, els.newPackWildcard].forEach(
+    ta => ta && ta.addEventListener("input", () => hideEl(els.errorDares))
+  );
+
+  // Prompt tab switching
+  document.querySelectorAll(".prompt-tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".prompt-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".prompt-tab-panel").forEach(p => p.classList.remove("active"));
+      tab.classList.add("active");
+      document.querySelector(`.prompt-tab-panel[data-panel="${tab.dataset.tab}"]`).classList.add("active");
+    });
+  });
 
   els.browseSearch.addEventListener("input", renderBrowse);
   els.browseFilter.addEventListener("change", renderBrowse);
@@ -563,11 +578,22 @@ function createPack() {
   const author = els.newPackAuthor.value.trim() || getCurrentUser()?.email?.split("@")[0] || "Anonymous";
   const intensity = els.newPackIntensity.value;
   const isPublic = els.newPackPublic.checked;
-  const rawLines = els.newPackDares.value.split("\n").map((l) => l.trim()).filter(Boolean);
+  // Collect prompts from each typed tab
+  const collectLines = (el, type, stamp, offset) =>
+    (el ? el.value.split("\n").map(l => l.trim()).filter(Boolean) : [])
+      .map((text, i) => ({ id: `custom-${stamp}-${type}-${offset + i}`, text, type, enabled: true }));
+
+  const stamp = Date.now();
+  const dares = [
+    ...collectLines(els.newPackDare,     "dare",     stamp, 0),
+    ...collectLines(els.newPackTruth,    "truth",    stamp, 100),
+    ...collectLines(els.newPackShot,     "shot",     stamp, 200),
+    ...collectLines(els.newPackWildcard, "wildcard", stamp, 300),
+  ];
 
   let valid = true;
   if (!title) { showEl(els.errorTitle); valid = false; } else hideEl(els.errorTitle);
-  if (!rawLines.length) { showEl(els.errorDares); valid = false; } else hideEl(els.errorDares);
+  if (!dares.length) { showEl(els.errorDares); valid = false; } else hideEl(els.errorDares);
   if (!valid) return;
 
   // Prompt to sign in if not logged in (so the pack is saved to DB)
@@ -576,22 +602,16 @@ function createPack() {
     if (proceed) { showAuthModal(); return; }
   }
 
-  const stamp = Date.now();
-  // Fix #4: parse [truth]/[dare]/[shot] prefix tags
-  const dares = rawLines.map((line, index) => {
-    const prefixMatch = line.match(/^\[(truth|dare|shot|wildcard)\]\s*/i);
-    const type = prefixMatch ? prefixMatch[1].toLowerCase() : inferType(line);
-    const text = prefixMatch ? line.slice(prefixMatch[0].length).trim() : line;
-    return { id: `custom-${stamp}-${index}`, text, type, enabled: true };
-  }).filter((d) => d.text);
-
   const pack = { id: `custom-${stamp}`, categoryName: title, author, isPublic, intensity, source: "local", dares };
   state.libraryPacks.unshift(pack);
   if (isPublic) state.publicPacks.unshift(structuredClone({ ...pack, source: "community" }));
 
   els.newPackTitle.value = "";
   els.newPackAuthor.value = "";
-  els.newPackDares.value = "";
+  if (els.newPackDare) els.newPackDare.value = "";
+  if (els.newPackTruth) els.newPackTruth.value = "";
+  if (els.newPackShot) els.newPackShot.value = "";
+  if (els.newPackWildcard) els.newPackWildcard.value = "";
   els.newPackPublic.checked = true;
   els.newPackIntensity.value = "Lite";
 

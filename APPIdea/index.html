@@ -198,14 +198,32 @@
                 <option value="Drinking">Drinking</option>
               </select>
               <label class="toggle-row">
-                <input id="new-pack-public" type="checkbox" />
+                <input id="new-pack-public" type="checkbox" checked />
                 <span>Publish to browse screen</span>
               </label>
-              <!-- Fix #4: type tag prefix hint -->
-              <div>
-                <textarea id="new-pack-dares" rows="7" placeholder="One dare per line. Prefix with [truth], [dare], or [shot] to set type — or leave blank to auto-detect."></textarea>
-                <p class="field-hint">Example: <code>[truth] What's your most embarrassing story?</code></p>
-                <p class="field-error hidden" id="error-dares">Add at least one dare or truth.</p>
+              <!-- Tabbed prompt editor per type -->
+              <div class="prompt-tabs-container">
+                <div class="prompt-tabs" role="tablist">
+                  <button class="prompt-tab active" data-tab="dare" type="button" role="tab">🎯 Dare</button>
+                  <button class="prompt-tab" data-tab="truth" type="button" role="tab">💬 Truth</button>
+                  <button class="prompt-tab" data-tab="shot" type="button" role="tab">🥃 Shot</button>
+                  <button class="prompt-tab" data-tab="wildcard" type="button" role="tab">🃏 Wildcard</button>
+                </div>
+                <div class="prompt-tab-panels">
+                  <div class="prompt-tab-panel active" data-panel="dare">
+                    <textarea id="new-pack-dare" rows="6" placeholder="One dare per line&#10;e.g. Do your best celebrity impression"></textarea>
+                  </div>
+                  <div class="prompt-tab-panel" data-panel="truth">
+                    <textarea id="new-pack-truth" rows="6" placeholder="One truth question per line&#10;e.g. What's your most embarrassing moment?"></textarea>
+                  </div>
+                  <div class="prompt-tab-panel" data-panel="shot">
+                    <textarea id="new-pack-shot" rows="6" placeholder="One shot prompt per line&#10;e.g. Take a shot if you've ever lied to a friend"></textarea>
+                  </div>
+                  <div class="prompt-tab-panel" data-panel="wildcard">
+                    <textarea id="new-pack-wildcard" rows="6" placeholder="One wildcard per line&#10;e.g. Everyone votes — who is most likely to..."></textarea>
+                  </div>
+                </div>
+                <p class="field-error hidden" id="error-dares">Add at least one prompt in any category.</p>
               </div>
               <button class="primary-action" id="create-pack">Create Pack</button>
             </div>

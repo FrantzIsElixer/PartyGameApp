@@ -898,3 +898,65 @@ textarea { resize: vertical; }
   .wheel { width: min(80vw, 240px); }
   .pointer-disc { width: min(84vw, 260px); }
 }
+
+/* ── Prompt type tabs ────────────────────────────────────────────────────── */
+
+.prompt-tabs-container { display: grid; gap: 0; }
+
+.prompt-tabs {
+  display: flex;
+  gap: 0;
+  border-radius: 14px 14px 0 0;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-bottom: none;
+}
+
+.prompt-tab {
+  flex: 1;
+  padding: 10px 8px;
+  background: rgba(255,255,255,0.03);
+  border: none;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.prompt-tab:last-child { border-right: none; }
+
+.prompt-tab.active {
+  background: linear-gradient(135deg, rgba(255,143,61,0.18), rgba(255,77,109,0.18));
+  color: var(--text);
+}
+
+.prompt-tab:hover:not(.active) { background: rgba(255,255,255,0.07); color: var(--text); }
+
+.prompt-tab-panels {
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 0 0 14px 14px;
+  overflow: hidden;
+}
+
+.prompt-tab-panel { display: none; }
+.prompt-tab-panel.active { display: block; }
+
+.prompt-tab-panel textarea {
+  border: none;
+  border-radius: 0;
+  background: rgba(255,255,255,0.03);
+  resize: vertical;
+  min-height: 130px;
+}
+
+.prompt-tab-panel textarea:focus {
+  outline: none;
+  background: rgba(255,255,255,0.05);
+}
+
+@media (max-width: 480px) {
+  .prompt-tab { font-size: 0.75rem; padding: 9px 4px; }
+}

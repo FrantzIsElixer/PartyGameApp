@@ -153,12 +153,21 @@ function spinPlayer() {
   const players = state.players.length ? state.players : ["Closest Player"];
   const selectedIndex = getSelectedPlayerIndex(players);
   const player = players[selectedIndex];
-  const targetAngle = ((selectedIndex / players.length) * 360) - 90 + (Math.random() - 0.5) * 10;
-  const nextRotation = pointerRotation + 1440 + targetAngle;
+
+  // Calculate the exact angle for this player's slice on the disc.
+  // Each player occupies (360 / players.length) degrees.
+  // Player 0 starts at the top (0deg). We rotate the pointer TO the player,
+  // so we need the pointer (fixed) to align with the center of the player's slice.
+  // Pointer is at top = 0deg. Player i center = (i / players.length) * 360 deg.
+  // To bring player i to the top: rotate disc by -(i/n)*360, i.e. pointer moves by +(i/n)*360.
+  const sliceCenter = (selectedIndex / players.length) * 360;
+  const currentNorm = ((pointerRotation % 360) + 360) % 360;
+  let delta = (sliceCenter - currentNorm + 360) % 360;
+  if (delta < 20) delta += 360; // always spin forward visibly
+  const nextRotation = pointerRotation + 1440 + delta;
 
   playerSpinBusy = true;
   els.spinPlayer.disabled = true;
-  // Fix #9: haptic feedback on mobile
   if (navigator.vibrate) navigator.vibrate(60);
   els.pointerFinger.style.transform = `translate(-50%, -50%) rotate(${nextRotation}deg)`;
 
@@ -287,12 +296,30 @@ function getPromptForOutcome(outcome) {
   const activePacks = getPlayablePacks().filter((p) => state.selectedCategoryIds.includes(p.id));
   const enabledDares = activePacks.flatMap((p) => p.dares.filter((d) => d.enabled));
   if (!enabledDares.length) return "No enabled prompts in the selected categories yet.";
+
   let matchingType = "dare";
   if (outcome === "Truth") matchingType = "truth";
   if (outcome === "Take a Shot") matchingType = "shot";
+  if (outcome === "Wildcard Dare") matchingType = "wildcard";
   const matching = enabledDares.filter((d) => d.type === matchingType);
   const pool = matching.length ? matching : enabledDares;
-  return pool[Math.floor(Math.random() * pool.length)].text;
+
+  // Build a used-prompts set per type to avoid repeats.
+  // Reset automatically when all prompts in the pool have been used.
+  state.usedPromptIds = state.usedPromptIds || {};
+  const usedKey = matchingType;
+  const usedIds = new Set(state.usedPromptIds[usedKey] || []);
+
+  let available = pool.filter(d => !usedIds.has(d.id));
+  if (!available.length) {
+    // All used — reset this type's history and start fresh
+    state.usedPromptIds[usedKey] = [];
+    available = pool;
+  }
+
+  const chosen = available[Math.floor(Math.random() * available.length)];
+  state.usedPromptIds[usedKey] = [...(state.usedPromptIds[usedKey] || []), chosen.id];
+  return chosen.text;
 }
 
 // ─── Player selection ─────────────────────────────────────────────────────────
@@ -340,7 +367,8 @@ function loadState() {
         selectedDare: parsed.selectedDare || "",
         currentPlayerIndex: parsed.currentPlayerIndex || 0,
         roundCount: parsed.roundCount || 0,
-        playerTurnCounts: parsed.playerTurnCounts || {}
+        playerTurnCounts: parsed.playerTurnCounts || {},
+        usedPromptIds: parsed.usedPromptIds || {}
       });
     } catch (_) { localStorage.removeItem(STORAGE_KEY); }
   }
@@ -351,7 +379,7 @@ function loadState() {
     selectedCategoryIds: ["my-1", "pub-1"],
     players: ["Alex", "Jamie", "Taylor"],
     selectedPlayer: "", selectedOutcome: "", selectedDare: "",
-    currentPlayerIndex: 0, roundCount: 0, playerTurnCounts: {}
+    currentPlayerIndex: 0, roundCount: 0, playerTurnCounts: {}, usedPromptIds: {}
   });
 }
 

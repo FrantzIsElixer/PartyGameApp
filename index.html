@@ -183,7 +183,16 @@
         </div>
         <div class="editor-grid">
           <div class="card">
-            <h3>Create a Pack</h3>
+            <div class="pack-create-header">
+              <h3>Create a Pack</h3>
+              <label class="publish-toggle-pill" id="publish-toggle-label">
+                <input id="new-pack-public" type="checkbox" checked />
+                <span class="publish-pill-track">
+                  <span class="publish-pill-thumb"></span>
+                </span>
+                <span class="publish-pill-text">Publish</span>
+              </label>
+            </div>
             <div class="stack">
               <!-- Fix #5: validation messages -->
               <div class="field-group">
@@ -197,10 +206,6 @@
                 <option value="NSFW">NSFW</option>
                 <option value="Drinking">Drinking</option>
               </select>
-              <label class="toggle-row">
-                <input id="new-pack-public" type="checkbox" checked />
-                <span>Publish to browse screen</span>
-              </label>
               <!-- Tabbed prompt editor per type -->
               <div class="prompt-tabs-container">
                 <div class="prompt-tabs" role="tablist">

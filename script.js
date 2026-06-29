@@ -434,11 +434,18 @@ function renderLibrary() {
       <div class="pack-top">
         <div>
           <h3>${escapeHtml(pack.categoryName)}</h3>
-          <p>by ${escapeHtml(pack.author)} | ${pack.intensity} | ${pack.isPublic ? "Public" : "Private"}</p>
+          <p class="pack-meta">by ${escapeHtml(pack.author)} · ${pack.intensity}</p>
         </div>
-        <div class="tag-row">
-          <span class="tag">${countEnabled(pack)} enabled</span>
-          ${isUserPack ? `<button class="mini-action" data-publish="${pack.id}">${pack.isPublic ? "Unpublish" : "Publish"}</button>` : `<span class="tag">Starter Pack</span>`}
+        <div class="pack-actions">
+          <span class="tag">${countEnabled(pack)} prompts</span>
+          ${isUserPack ? `
+            <label class="publish-toggle-pill publish-toggle-mini" title="${pack.isPublic ? "Unpublish" : "Publish to browse"}">
+              <input type="checkbox" data-publish="${pack.id}" ${pack.isPublic ? "checked" : ""} />
+              <span class="publish-pill-track"><span class="publish-pill-thumb"></span></span>
+              <span class="publish-pill-text">${pack.isPublic ? "Public" : "Private"}</span>
+            </label>
+            <button class="delete-pack-btn" data-delete="${pack.id}" title="Delete pack">🗑</button>
+          ` : `<span class="tag starter-tag">Starter</span>`}
         </div>
       </div>
       <div class="pack-dares">${dareLines}</div>
@@ -447,7 +454,8 @@ function renderLibrary() {
       toggle.addEventListener("change", (e) => toggleDare(e.target.dataset.pack, e.target.dataset.dare));
     });
     if (isUserPack) {
-      wrapper.querySelector("[data-publish]").addEventListener("click", (e) => togglePublish(e.currentTarget.dataset.publish));
+      wrapper.querySelector("input[data-publish]").addEventListener("change", (e) => togglePublish(e.target.dataset.publish));
+      wrapper.querySelector("[data-delete]").addEventListener("click", (e) => deletePack(e.currentTarget.dataset.delete));
     }
     els.libraryList.appendChild(wrapper);
   });
@@ -556,6 +564,18 @@ function togglePublish(packId) {
   renderBrowse();
   renderPlayCategories();
   renderReadyRoom();
+}
+
+function deletePack(packId) {
+  const pack = state.libraryPacks.find(p => p.id === packId);
+  if (!pack) return;
+  if (!confirm(`Delete "${pack.categoryName}"? This can't be undone.`)) return;
+  state.libraryPacks = state.libraryPacks.filter(p => p.id !== packId);
+  // Also remove from public packs if it was published
+  state.publicPacks = state.publicPacks.filter(p => p.id !== packId);
+  deletePackFromDB(packId);
+  saveState();
+  render();
 }
 
 function addPackToLibrary(packId) {

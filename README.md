@@ -1,191 +1,84 @@
-# After Hours
+🍻 After Hours
 
-React Native / Expo prototype for your party game app.
+The ultimate digital party game for pre-games, house parties, road trips, and late-night hangouts.
 
-## What this is
+After Hours is a mobile-friendly party game that replaces traditional card-based party games with a single digital platform. Players can browse different game packs, choose their preferred game mode, and instantly start playing with friends without carrying physical cards.
 
-This project is an Expo app, not a XAMPP app.
+🎯 Purpose
 
-It uses:
+Most party games require purchasing card packs, carrying decks around, or switching between multiple apps. After Hours brings everything into one place by offering a collection of party games and card packs that can be accessed from any device.
 
-- React Native
-- Expo
-- Node.js / npm
+Whether you're hosting a party, pre-gaming with friends, or hanging out after hours, the app provides endless prompts, dares, truths, challenges, and drinking game content.
 
-It does not use:
+✨ Features
+🎲 Multiple Game Modes
+Truth or Dare
+Extreme Challenges
+Wildcard Rounds
+Custom Party Packs
+📚 Browseable Card Packs
+Easily switch between different categories
+Unlock new content packs
+Store all packs digitally
+No physical cards required
+📱 Mobile-Friendly Experience
+Works directly in your browser
+Responsive design for phones and tablets
+Easy-to-read card interface
+Fast navigation between prompts
+👥 Perfect for Groups
+Small friend groups
+College parties
+Pregames
+Road trips
+Game nights
+🚀 Future Features
+User accounts
+Save favorite prompts
+Multiplayer game rooms
+Community-created packs
+Premium content packs
+AI-generated party prompts
+Custom house rules
+Leaderboards and achievements
+🛠️ Tech Stack
 
-- XAMPP
-- Apache
-- PHP
-- MySQL
+Frontend:
 
-## Main files
+HTML
+CSS
+JavaScript
 
-- `App.js`
-  The main app UI and game logic.
+Hosting:
 
-- `package.json`
-  App dependencies and run scripts.
+Vercel
 
-- `app.json`
-  Expo app configuration.
+Version Control:
 
-- `assets/pointing-finger.png`
-  Your real finger pointer image used in the player chooser.
+Git
+GitHub
 
-- `index.html`, `styles.css`, `script.js`
-  Older browser prototype files kept only as reference.
 
-## Features already built
+🏗️ Installation
 
-- Home screen
-- Step-by-step Play flow
-- Category selection
-- Player setup
-- Rotation mode
-- Random Select mode
-- Suspenseful finger spinner that rotates several times before choosing
-- Outcome wheel
-- Custom pack creator
-- Browse packs screen
+Clone the repository:
 
-## Before you run it later
+git clone https://github.com/FrantzIsElixer/PartyGameApp.git
 
-Make sure these are installed:
 
-- Node.js
-- npm
+🌐 Live Demo
 
-To check:
+https://party-game-app-dun.vercel.app/index.html
 
-```powershell
-node -v
-npm -v
-```
+🎓 Why I Built This
 
-If those commands fail, reinstall Node.js and reopen your terminal.
+I created After Hours as a software project to combine my interests in product development, web applications, and social gaming. The goal is to create a modern digital alternative to traditional party card games while learning full-stack development and product design.
 
-## How to run the app
+👨‍💻 Author
 
-Open a terminal inside:
+Frantz Geraldo
 
-```powershell
-C:\Users\frant\Documents\Playground\APP Idea
-```
+Computer Science Student at Indiana University of Pennsylvania (IUP)
 
-Then run:
-
-```powershell
-npm install
-npm start
-```
-
-That starts the Expo dev server.
-
-## Ways to open the app
-
-### Option 1: Phone with Expo Go
-
-1. Install Expo Go on your phone.
-2. Run `npm start`.
-3. Scan the QR code shown by Expo.
-
-### Option 2: Browser
-
-Run:
-
-```powershell
-npx expo start --web
-```
-
-If Expo gives you a localhost URL, open it in your browser.
-
-Example:
-
-```text
-http://localhost:8083
-```
-
-### Option 3: Android emulator
-
-Run:
-
-```powershell
-npm run android
-```
-
-You need Android Studio / emulator set up first.
-
-### Option 4: iPhone simulator
-
-Run:
-
-```powershell
-npm run ios
-```
-
-This usually requires macOS.
-
-## Important note about this computer
-
-On this machine, `node` and `npm` were installed but not available directly in the shell PATH at first.
-
-The working Node path was:
-
-```text
-C:\Program Files\nodejs\node.exe
-```
-
-The working npm path was:
-
-```text
-C:\Program Files\nodejs\npm.cmd
-```
-
-If normal commands do not work, you can use:
-
-```powershell
-& 'C:\Program Files\nodejs\npm.cmd' install
-& 'C:\Program Files\nodejs\node.exe' '.\node_modules\expo\bin\cli' start
-```
-
-## If a port is already busy
-
-Expo may tell you a port is already in use.
-
-You can start it on another port like this:
-
-```powershell
-npx expo start --web --port 8083
-```
-
-or
-
-```powershell
-& 'C:\Program Files\nodejs\node.exe' '.\node_modules\expo\bin\cli' start --web --port 8083
-```
-
-## If Expo asks to create a folder in your user directory
-
-Expo may need to create:
-
-```text
-C:\Users\frant\.expo
-```
-
-That is normal. It stores Expo user/dev settings.
-
-## Good next upgrades
-
-- Add local storage so packs persist after app restarts
-- Improve the wheel visuals
-- Add sounds and haptics
-- Add a real backend for public packs
-- Add moderation/reporting for community content
-
-## Quick restart checklist
-
-1. Open terminal in `C:\Users\frant\Documents\Playground\APP Idea`
-2. Run `npm install` if dependencies are missing
-3. Run `npm start`
-4. Use Expo Go, browser, or emulator to open it
+GitHub:
+https://github.com/FrantzIsElixer
